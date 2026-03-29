@@ -60,20 +60,7 @@ Item {
         }
     }
 
-    Process {
-        id: filePickerProcess
-        running: false
-        command: ["bash", "-c", "zenity --file-selection --title='Select Schedule JSON' --file-filter='*.json'"]
-        stdout: StdioCollector {
-            id: pickerStdout
-            onStreamFinished: {
-                var selectedFile = pickerStdout.text.trim();
-                if (selectedFile !== "") {
-                    Persistent.states.cheatsheet.schedulePath = selectedFile;
-                }
-            }
-        }
-    }
+
 
     ColumnLayout {
         id: layoutColumn
@@ -103,15 +90,14 @@ Item {
                 }
             }
 
-            RippleButton {
-                implicitWidth: 160
-                implicitHeight: 40
-                onClicked: {
-                    filePickerProcess.running = true;
-                }
-                contentItem: StyledText {
-                    text: Persistent.states.cheatsheet.schedulePath === "" ? "Load Schedule" : "Change Schedule"
-                    anchors.centerIn: parent
+            ToolbarTextField {
+                id: pathInputField
+                Layout.preferredWidth: 300
+                Layout.preferredHeight: 40
+                placeholderText: "Paste schedule.json path here..."
+                text: Persistent.states.cheatsheet.schedulePath
+                onAccepted: {
+                    Persistent.states.cheatsheet.schedulePath = text;
                 }
             }
         }
