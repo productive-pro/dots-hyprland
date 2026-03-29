@@ -15,6 +15,10 @@ Scope { // Scope
     id: root
     property var tabButtonList: [
         {
+            "icon": "calendar_month",
+            "name": Translation.tr("Schedule")
+        },
+        {
             "icon": "keyboard",
             "name": Translation.tr("Keybinds")
         },
@@ -170,6 +174,7 @@ Scope { // Scope
                             }
                         }
 
+                        CheatsheetSchedule {}
                         CheatsheetKeybinds {}
                         CheatsheetPeriodicTable {}
                     }

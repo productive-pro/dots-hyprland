@@ -65,6 +65,7 @@ Singleton {
 
             property JsonObject cheatsheet: JsonObject {
                 property int tabIndex: 0
+                property string schedulePath: ""
             }
 
             property JsonObject sidebar: JsonObject {
