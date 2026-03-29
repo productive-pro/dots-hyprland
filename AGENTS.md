@@ -101,6 +101,8 @@ Source: `modules/common/Directories.qml`
 
 ## Session Notes
 
+- 2026-03-29: Follow-up Quickshell font tweak increased only the smaller font tokens by an additional `+2px`; larger font tokens were left unchanged in both the persistent `dots/.config/quickshell/ii/...` source and live `~/.config/quickshell/ii/...` copy.
+- 2026-03-29: Increased Quickshell global font tokens by `+1px` in both `dots/.config/quickshell/ii/modules/common/Appearance.qml` and `dots/.config/quickshell/ii/modules/waffle/looks/Looks.qml`; mirrored the same change into the live `~/.config/quickshell/ii/` copy for immediate effect.
 - 2026-03-29: `~/sarthak_spaces/AI_DS/schedule.json` now includes a `2026-03-28` day entry and the week label was corrected to `Mar 28 – Apr 4, 2026` so Quickshell's schedule view has a valid day during UTC/local date crossover.
 - 2026-03-28: Cheatsheet now opens as a single `Schedule` view. `Cheatsheet.qml` no longer exposes `Keybinds`/`Elements` pages, and `CheatsheetSchedule.qml` reads `~/sarthak_spaces/AI_DS/schedule.json` via the `schedule.json` filename property.
 - 2026-03-28: `sdata/dist-arch/install-deps.sh` now uses `makepkg -C` for VCS (`git+`) PKGBUILDs so moved repos do not keep stale absolute-path clones under `src/`.

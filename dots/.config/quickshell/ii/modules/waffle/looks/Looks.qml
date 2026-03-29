@@ -158,10 +158,10 @@ Singleton {
             property int strongest: Font.Bold
         }
         property QtObject pixelSize: QtObject {
-            property real normal: 11
-            property real large: 13
-            property real larger: 15
-            property real xlarger: 17
+            property real normal: 14
+            property real large: 14
+            property real larger: 16
+            property real xlarger: 18
         }
         property QtObject variableAxes: QtObject {
             property var ui: ({
