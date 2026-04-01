@@ -10,6 +10,7 @@ import QtQuick
  */
 Item {
     id: root
+    anchors.fill: parent
     property var inputField: panel.inputField
 
     onFocusChanged: focus => { if (focus) panel.inputField.forceActiveFocus() }

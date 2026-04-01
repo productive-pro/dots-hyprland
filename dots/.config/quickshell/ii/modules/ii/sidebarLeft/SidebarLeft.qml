@@ -238,6 +238,27 @@ Scope { // Scope
         function response(text: string): void {
             if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("response", text)
         }
+        function modelName(name: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("modelName", name)
+        }
+        function streamStart(): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("streamStart", "")
+        }
+        function token(text: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("token", text)
+        }
+        function streamEnd(): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("streamEnd", "")
+        }
+        function thinkingStart(text: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinkingStart", text)
+        }
+        function thinking(text: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinking", text)
+        }
+        function thinkingEnd(): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinkingEnd", "")
+        }
         function memoryUpdate(json: string): void {
             if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("memoryUpdate", json)
         }

@@ -20,29 +20,29 @@ Item {
         ...(root.aiChatEnabled     ? [{"icon": "neurology",  "name": Translation.tr("Intelligence")}] : []),
         ...(root.translatorEnabled ? [{"icon": "translate",  "name": Translation.tr("Translator")}]  : []),
     ]
-    property int tabCount: swipeView.count
+    property int tabCount: tabButtonList.length
 
     function focusActiveItem() {
-        swipeView.currentItem.forceActiveFocus()
+        pageStack.currentItem.forceActiveFocus()
     }
 
     function switchToAssistant() {
-        swipeView.currentIndex = 0  // Assistant is always first
+        pageStack.currentIndex = 0  // Assistant is always first
     }
 
     function relayAssistantEvent(event: string, payload: string): void {
-        let a = swipeView.contentChildren[0]
-        if (a && typeof a.receiveEvent === "function") a.receiveEvent(event, payload)
+        if (assistantPage && typeof assistantPage.receiveEvent === "function")
+            assistantPage.receiveEvent(event, payload)
     }
 
     Keys.onPressed: (event) => {
         if (event.modifiers === Qt.ControlModifier) {
             if (event.key === Qt.Key_PageDown) {
-                swipeView.incrementCurrentIndex()
+                pageStack.currentIndex = Math.min(pageStack.count - 1, pageStack.currentIndex + 1)
                 event.accepted = true;
             }
             else if (event.key === Qt.Key_PageUp) {
-                swipeView.decrementCurrentIndex()
+                pageStack.currentIndex = Math.max(0, pageStack.currentIndex - 1)
                 event.accepted = true;
             }
         }
@@ -63,56 +63,41 @@ Item {
                 id: tabBar
                 Layout.alignment: Qt.AlignHCenter
                 tabButtonList: root.tabButtonList
-                currentIndex: 0
-                onCurrentIndexChanged: swipeView.currentIndex = currentIndex
+                currentIndex: pageStack.currentIndex
+                onCurrentIndexChanged: pageStack.currentIndex = currentIndex
             }
         }
 
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            implicitWidth: swipeView.implicitWidth
-            implicitHeight: swipeView.implicitHeight
+            implicitWidth: pageStack.implicitWidth
+            implicitHeight: pageStack.implicitHeight
             radius: Appearance.rounding.normal
             color: Appearance.colors.colLayer1
 
-            SwipeView { // Content pages
-                id: swipeView
+            StackLayout { // Content pages
+                id: pageStack
                 anchors.fill: parent
-                spacing: 10
-                // Drive swipeView from tabBar imperatively to avoid binding loop
-                onCurrentIndexChanged: tabBar.setCurrentIndex(currentIndex)
 
                 clip: true
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: swipeView.width
-                        height: swipeView.height
-                        radius: Appearance.rounding.small
-                    }
-                }
 
-                contentChildren: [
-                    assistant.createObject(),
-                    ...(root.aiChatEnabled     ? [aiChat.createObject()]     : []),
-                    ...(root.translatorEnabled ? [translator.createObject()] : []),
-                ]
+                Assistant {
+                    id: assistantPage
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
+                AiChat {
+                    visible: root.aiChatEnabled
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
+                Translator {
+                    visible: root.translatorEnabled
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
             }
         }
-
-        Component {
-            id: assistant
-            Assistant {}
-        }
-        Component {
-            id: aiChat
-            AiChat {}
-        }
-        Component {
-            id: translator
-            Translator {}
-        }
-
     }
 }
