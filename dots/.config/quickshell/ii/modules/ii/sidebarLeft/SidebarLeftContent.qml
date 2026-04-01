@@ -1,6 +1,7 @@
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.ii.sidebarLeft
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -14,17 +15,24 @@ Item {
     anchors.fill: parent
     property bool aiChatEnabled: Config.options.policies.ai !== 0
     property bool translatorEnabled: Config.options.sidebar.translator.enable
-    property bool animeEnabled: Config.options.policies.weeb !== 0
-    property bool animeCloset: Config.options.policies.weeb === 2
     property var tabButtonList: [
-        ...(root.aiChatEnabled ? [{"icon": "neurology", "name": Translation.tr("Intelligence")}] : []),
-        ...(root.translatorEnabled ? [{"icon": "translate", "name": Translation.tr("Translator")}] : []),
-        ...((root.animeEnabled && !root.animeCloset) ? [{"icon": "bookmark_heart", "name": Translation.tr("Anime")}] : [])
+        {"icon": "record_voice_over", "name": Translation.tr("Assistant")},
+        ...(root.aiChatEnabled     ? [{"icon": "neurology",  "name": Translation.tr("Intelligence")}] : []),
+        ...(root.translatorEnabled ? [{"icon": "translate",  "name": Translation.tr("Translator")}]  : []),
     ]
     property int tabCount: swipeView.count
 
     function focusActiveItem() {
         swipeView.currentItem.forceActiveFocus()
+    }
+
+    function switchToAssistant() {
+        swipeView.currentIndex = 0  // Assistant is always first
+    }
+
+    function relayAssistantEvent(event: string, payload: string): void {
+        let a = swipeView.contentChildren[0]
+        if (a && typeof a.receiveEvent === "function") a.receiveEvent(event, payload)
     }
 
     Keys.onPressed: (event) => {
@@ -55,7 +63,8 @@ Item {
                 id: tabBar
                 Layout.alignment: Qt.AlignHCenter
                 tabButtonList: root.tabButtonList
-                currentIndex: swipeView.currentIndex
+                currentIndex: 0
+                onCurrentIndexChanged: swipeView.currentIndex = currentIndex
             }
         }
 
@@ -71,7 +80,8 @@ Item {
                 id: swipeView
                 anchors.fill: parent
                 spacing: 10
-                currentIndex: tabBar.currentIndex
+                // Drive swipeView from tabBar imperatively to avoid binding loop
+                onCurrentIndexChanged: tabBar.setCurrentIndex(currentIndex)
 
                 clip: true
                 layer.enabled: true
@@ -84,14 +94,17 @@ Item {
                 }
 
                 contentChildren: [
-                    ...(root.aiChatEnabled ? [aiChat.createObject()] : []),
+                    assistant.createObject(),
+                    ...(root.aiChatEnabled     ? [aiChat.createObject()]     : []),
                     ...(root.translatorEnabled ? [translator.createObject()] : []),
-                    ...((root.tabButtonList.length === 0 || (!root.aiChatEnabled && !root.translatorEnabled && root.animeCloset)) ? [placeholder.createObject()] : []),
-                    ...(root.animeEnabled ? [anime.createObject()] : []),
                 ]
             }
         }
 
+        Component {
+            id: assistant
+            Assistant {}
+        }
         Component {
             id: aiChat
             AiChat {}
@@ -100,19 +113,6 @@ Item {
             id: translator
             Translator {}
         }
-        Component {
-            id: anime
-            Anime {}
-        }
-        Component {
-            id: placeholder
-            Item {
-                StyledText {
-                    anchors.centerIn: parent
-                    text: root.animeCloset ? Translation.tr("Nothing") : Translation.tr("Enjoy your empty sidebar...")
-                    color: Appearance.colors.colSubtext
-                }
-            }
-        }
+
     }
 }

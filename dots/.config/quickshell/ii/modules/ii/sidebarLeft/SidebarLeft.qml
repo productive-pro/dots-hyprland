@@ -216,6 +216,36 @@ Scope { // Scope
         }
     }
 
+    IpcHandler {
+        target: "voiceAssistantShortcut"
+        function trigger(): void {
+            GlobalStates.sidebarLeftOpen = true
+            if (root.sidebarContent) root.sidebarContent.switchToAssistant()
+        }
+    }
+
+    // Relay IPC events from voice-assistant.py → Assistant.qml
+    // IpcHandlers must live at Scope level to receive events regardless of sidebar state.
+    IpcHandler {
+        target: "voiceAssistant"
+
+        function userMessage(text: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("userMessage", text)
+        }
+        function status(state: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("status", state)
+        }
+        function response(text: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("response", text)
+        }
+        function memoryUpdate(json: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("memoryUpdate", json)
+        }
+        function agentId(id: string): void {
+            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("agentId", id)
+        }
+    }
+
     GlobalShortcut {
         name: "sidebarLeftToggle"
         description: "Toggles left sidebar on press"
@@ -240,6 +270,16 @@ Scope { // Scope
 
         onPressed: {
             GlobalStates.sidebarLeftOpen = false;
+        }
+    }
+
+    GlobalShortcut {
+        name: "voiceAssistantOpen"
+        description: "Open sidebar on Assistant tab"
+        onPressed: {
+            GlobalStates.sidebarLeftOpen = true;
+            // Assistant is always tab 0
+            if (root.sidebarContent) root.sidebarContent.switchToAssistant()
         }
     }
 
