@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Io
 
-QtObject {
+Item {
     id: root
 
     required property string voiceAssistantBin

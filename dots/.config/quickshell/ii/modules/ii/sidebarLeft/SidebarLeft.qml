@@ -224,10 +224,10 @@ Scope { // Scope
         }
     }
 
-    // Relay IPC events from voice-assistant.py → Assistant.qml
+    // Relay IPC events from voice-assistant.py → sidebar assistant view
     // IpcHandlers must live at Scope level to receive events regardless of sidebar state.
     IpcHandler {
-        target: "voiceAssistant"
+        target: "voiceAssistantSidebar"
 
         function userMessage(text: string): void {
             if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("userMessage", text)

@@ -1,7 +1,11 @@
 pragma ComponentBehavior: Bound
 
+import qs
+import qs.services
 import QtQuick
 import Quickshell
+import Quickshell.Io
+import Quickshell.Hyprland
 
 Scope {
     id: root

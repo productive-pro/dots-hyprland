@@ -14,7 +14,7 @@ import qs.modules.ii.onScreenKeyboard
 import qs.modules.ii.overview
 import qs.modules.ii.polkit
 import qs.modules.ii.regionSelector
-import qs.modules.ii.assistant
+import qs.modules.ii.assistant as VoiceAssistant
 import qs.modules.ii.screenCorners
 import qs.modules.ii.screenTranslator
 import qs.modules.ii.sessionScreen
@@ -38,7 +38,7 @@ Scope {
     PanelLoader { component: Overview {} }
     PanelLoader { component: Polkit {} }
     PanelLoader { component: RegionSelector {} }
-    PanelLoader { component: Assistant {} }
+    PanelLoader { component: VoiceAssistant.Assistant {} }
     PanelLoader { component: ScreenCorners {} }
     PanelLoader { component: ScreenTranslator {} }
     PanelLoader { component: SessionScreen {} }

@@ -1,7 +1,10 @@
 pragma ComponentBehavior: Bound
 
+import qs
+import qs.services
 import QtQuick
 import Quickshell
+import qs.modules.common
 
 Item {
     id: root
@@ -11,7 +14,6 @@ Item {
 
     AssistantWindow {
         id: overlay
-        anchors.fill: parent
         voiceAssistantBin: root.voiceAssistantBin
         whisperAssistantBin: root.whisperAssistantBin
     }
@@ -38,7 +40,6 @@ Item {
             return
         }
         openAssistant()
-        Qt.callLater(() => overlay.triggerMic())
     }
 
     function openAndListen() {

@@ -10,6 +10,8 @@ Item {
     required property string whisperAssistantBin
 
     readonly property string kokoroSpeakBin: "/home/archer/.local/bin/kokoro-speak"
+    property bool whisperRunning: false
+    property bool speaking: false
 
     AssistantSessionManager {
         id: session
@@ -21,19 +23,46 @@ Item {
         onScrollRequested: root.scrollRequested()
     }
 
-    WhisperService {
-        id: whisper
-        whisperAssistantBin: root.whisperAssistantBin
+    Process {
+        id: whisperStartProc
+        running: false
+        onExited: {
+            root.whisperRunning = true
+        }
     }
 
-    LettaService {
-        id: letta
-        voiceAssistantBin: root.voiceAssistantBin
+    Process {
+        id: whisperStopProc
+        running: false
+        onExited: {
+            root.whisperRunning = false
+        }
     }
 
-    KokoroService {
-        id: kokoro
-        kokoroSpeakBin: root.kokoroSpeakBin
+    Process {
+        id: lettaSendProc
+        running: false
+    }
+
+    Process {
+        id: lettaCancelProc
+        running: false
+    }
+
+    Process {
+        id: kokoroSpeakProc
+        running: false
+        onExited: {
+            root.speaking = false
+        }
+    }
+
+    Process {
+        id: kokoroStopProc
+        running: false
+        onExited: {
+            root.speaking = false
+        }
     }
 
     property alias state: session.state
@@ -51,8 +80,6 @@ Item {
     readonly property bool isChatVisible: session.isChatVisible
     readonly property bool isListeningOrTranscript: session.isListeningOrTranscript
     readonly property bool isBusy: session.isBusy
-    readonly property bool whisperRunning: whisper.running
-    readonly property bool speaking: kokoro.speaking
 
     signal scrollRequested()
     signal focusPromptRequested()
@@ -172,20 +199,20 @@ Item {
         if (session.state === "listening") return
         _stopAutoSendTimer()
         session.beginListening()
-        kokoro.stop()
-        whisper.startRecording()
+        stopSpeaking()
+        startRecording()
     }
 
     function stopListening() {
         if (session.state !== "listening") return
         session.processing = true
-        whisper.stopRecording()
+        stopRecording()
     }
 
     function cancelListening() {
         if (session.state !== "listening" && session.state !== "transcript-review") return
         _stopAutoSendTimer()
-        whisper.cancelRecording()
+        cancelRecording()
         session.clearTranscript()
         session.processing = false
         session.state = session.messages.length > 0 ? "responding" : "hidden"
@@ -195,7 +222,7 @@ Item {
         const payload = (text || session.composerDraft || "").trim()
         if (!payload) return
         _stopAutoSendTimer()
-        kokoro.stop()
+        stopSpeaking()
         session.lastSentUserText = payload
         session.addMessage("user", payload)
         session.state = "sending"
@@ -203,7 +230,7 @@ Item {
         session.clearTranscript()
         streaming.finaliseStream()
         streaming.finaliseThinking()
-        letta.sendText(payload)
+        sendTextToLetta(payload)
         focusPromptRequested()
     }
 
@@ -225,8 +252,8 @@ Item {
 
     function cancelRun() {
         _stopAutoSendTimer()
-        letta.cancelRun()
-        kokoro.stop()
+        cancelLettaRun()
+        stopSpeaking()
         streaming.finaliseThinking()
         streaming.finaliseStream()
         session.processing = false
@@ -243,7 +270,7 @@ Item {
 
     function reset() {
         if (session.state === "listening") cancelListening()
-        kokoro.stop()
+        stopSpeaking()
     }
 
     function toggleThinking(index) {
@@ -286,5 +313,54 @@ Item {
                 return
             }
         }
+    }
+
+    function startRecording() {
+        if (root.whisperRunning) return
+        whisperStartProc.command = ["bash", "-lc", `${root.whisperAssistantBin} start`]
+        whisperStartProc.running = true
+        root.whisperRunning = true
+    }
+
+    function stopRecording() {
+        if (!root.whisperRunning) return
+        whisperStopProc.command = ["bash", "-lc", `${root.whisperAssistantBin} stop`]
+        whisperStopProc.running = true
+        root.whisperRunning = false
+    }
+
+    function cancelRecording() {
+        if (root.whisperRunning) {
+            stopRecording()
+            return
+        }
+        whisperStartProc.running = false
+        whisperStopProc.running = false
+    }
+
+    function sendTextToLetta(text) {
+        const payload = (text || "").trim()
+        if (!payload) return
+        lettaSendProc.command = ["bash", "-lc", `printf '%s\\n' ${JSON.stringify(payload)} | ${root.voiceAssistantBin} pipe`]
+        lettaSendProc.running = true
+    }
+
+    function cancelLettaRun() {
+        lettaCancelProc.command = ["bash", "-lc", `${root.voiceAssistantBin} cancel`]
+        lettaCancelProc.running = true
+    }
+
+    function speak(text) {
+        const payload = (text || "").trim()
+        if (!payload) return
+        kokoroSpeakProc.command = [root.kokoroSpeakBin, "speak", payload]
+        kokoroSpeakProc.running = true
+        root.speaking = true
+    }
+
+    function stopSpeaking() {
+        kokoroStopProc.command = [root.kokoroSpeakBin, "stop"]
+        kokoroStopProc.running = true
+        root.speaking = false
     }
 }

@@ -21,13 +21,16 @@ ColumnLayout {
     Repeater {
         model: StringUtils.splitMarkdownBlocks(root.content || "")
 
-        delegate: Loader {
+        delegate: Item {
             required property var modelData
             Layout.fillWidth: true
-            sourceComponent: modelData.type === "code" ? codeComponent : textComponent
+            implicitHeight: modelData.type === "code" ? codeBlock.implicitHeight : textBlock.implicitHeight
 
-            component textComponent: TextArea {
-                Layout.fillWidth: true
+            TextArea {
+                id: textBlock
+                visible: modelData.type !== "code"
+                anchors.left: parent.left
+                anchors.right: parent.right
                 readOnly: true
                 selectByMouse: root.enableMouseSelection
                 wrapMode: TextEdit.Wrap
@@ -45,7 +48,11 @@ ColumnLayout {
                 }
             }
 
-            component codeComponent: AssistantCodeBlock {
+            AssistantCodeBlock {
+                id: codeBlock
+                visible: modelData.type === "code"
+                anchors.left: parent.left
+                anchors.right: parent.right
                 code: modelData.content
                 language: modelData.lang || "txt"
                 messageData: root.messageData
