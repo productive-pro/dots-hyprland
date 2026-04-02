@@ -4,46 +4,39 @@ import qs
 import qs.services
 import QtQuick
 import Quickshell
-import qs.modules.common
+import qs.modules.ii.assistant
 
-Item {
+Scope {
     id: root
 
-    property string voiceAssistantBin: "/home/archer/.local/bin/voice-assistant"
-    property string whisperAssistantBin: "/home/archer/.local/bin/whisper-assistant"
+    readonly property string voiceAssistantBin:   "/home/archer/.local/bin/voice-assistant"
+    readonly property string whisperAssistantBin: "/home/archer/.local/bin/whisper-assistant"
 
-    AssistantWindow {
-        id: overlay
-        voiceAssistantBin: root.voiceAssistantBin
-        whisperAssistantBin: root.whisperAssistantBin
+    function openAssistant()   { GlobalStates.voiceAssistantActive = true }
+    function closeAssistant()  { GlobalStates.voiceAssistantActive = false }
+    function toggleAssistant() { GlobalStates.voiceAssistantActive = !GlobalStates.voiceAssistantActive }
+
+    function openAndListen() {
+        GlobalStates.voiceAssistantActive = true
+        if (win.item) win.item.triggerMic()
     }
 
     function receiveEvent(event, payload) {
-        overlay.receiveEvent(event, payload)
+        if (win.item) win.item.receiveEvent(event, payload)
     }
 
-    function triggerMic() {
-        overlay.triggerMic()
-    }
-
-    function openAssistant() {
+    function submitMessage(text) {
         GlobalStates.voiceAssistantActive = true
+        if (win.item) win.item.receiveEvent("userMessage", text)
     }
 
-    function closeAssistant() {
-        GlobalStates.voiceAssistantActive = false
-    }
-
-    function toggleAssistant() {
-        if (GlobalStates.voiceAssistantActive) {
-            closeAssistant()
-            return
+    Loader {
+        id: win
+        active: true
+        asynchronous: true
+        sourceComponent: AssistantWindow {
+            voiceAssistantBin:   root.voiceAssistantBin
+            whisperAssistantBin: root.whisperAssistantBin
         }
-        openAssistant()
-    }
-
-    function openAndListen() {
-        openAssistant()
-        Qt.callLater(() => overlay.triggerMic())
     }
 }

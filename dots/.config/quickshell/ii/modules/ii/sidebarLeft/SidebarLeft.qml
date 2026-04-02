@@ -216,57 +216,6 @@ Scope { // Scope
         }
     }
 
-    IpcHandler {
-        target: "voiceAssistantShortcut"
-        function trigger(): void {
-            GlobalStates.sidebarLeftOpen = true
-            if (root.sidebarContent) root.sidebarContent.switchToAssistant()
-        }
-    }
-
-    // Relay IPC events from voice-assistant.py → sidebar assistant view
-    // IpcHandlers must live at Scope level to receive events regardless of sidebar state.
-    IpcHandler {
-        target: "voiceAssistantSidebar"
-
-        function userMessage(text: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("userMessage", text)
-        }
-        function status(state: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("status", state)
-        }
-        function response(text: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("response", text)
-        }
-        function modelName(name: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("modelName", name)
-        }
-        function streamStart(): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("streamStart", "")
-        }
-        function token(text: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("token", text)
-        }
-        function streamEnd(): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("streamEnd", "")
-        }
-        function thinkingStart(text: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinkingStart", text)
-        }
-        function thinking(text: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinking", text)
-        }
-        function thinkingEnd(): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("thinkingEnd", "")
-        }
-        function memoryUpdate(json: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("memoryUpdate", json)
-        }
-        function agentId(id: string): void {
-            if (root.sidebarContent) root.sidebarContent.relayAssistantEvent("agentId", id)
-        }
-    }
-
     GlobalShortcut {
         name: "sidebarLeftToggle"
         description: "Toggles left sidebar on press"
@@ -291,16 +240,6 @@ Scope { // Scope
 
         onPressed: {
             GlobalStates.sidebarLeftOpen = false;
-        }
-    }
-
-    GlobalShortcut {
-        name: "voiceAssistantOpen"
-        description: "Open sidebar on Assistant tab"
-        onPressed: {
-            GlobalStates.sidebarLeftOpen = true;
-            // Assistant is always tab 0
-            if (root.sidebarContent) root.sidebarContent.switchToAssistant()
         }
     }
 

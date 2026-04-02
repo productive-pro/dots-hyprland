@@ -1,0 +1,19 @@
+module qs.modules.ii.assistant
+
+Assistant                  1.0 Assistant.qml
+AssistantRoot              1.0 AssistantRoot.qml
+AssistantWindow            1.0 AssistantWindow.qml
+AssistantController        1.0 AssistantController.qml
+AssistantSessionManager    1.0 AssistantSessionManager.qml
+StreamingCoordinator       1.0 StreamingCoordinator.qml
+AssistantChatPanel         1.0 AssistantChatPanel.qml
+AssistantComposer          1.0 AssistantComposer.qml
+AssistantPromptInput       1.0 AssistantPromptInput.qml
+AssistantMessageList       1.0 AssistantMessageList.qml
+AssistantMessageBubble     1.0 AssistantMessageBubble.qml
+AssistantMarkdownMessage   1.0 AssistantMarkdownMessage.qml
+AssistantCodeBlock         1.0 AssistantCodeBlock.qml
+AssistantThinkingBubble    1.0 AssistantThinkingBubble.qml
+AssistantListeningPane     1.0 AssistantListeningPane.qml
+AssistantListeningVisualizer 1.0 AssistantListeningVisualizer.qml
+AssistantTranscriptPreview 1.0 AssistantTranscriptPreview.qml

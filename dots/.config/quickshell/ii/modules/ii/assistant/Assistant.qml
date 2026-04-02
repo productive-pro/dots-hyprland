@@ -7,6 +7,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
+import qs.modules.ii.assistant
+
 Scope {
     id: root
 
