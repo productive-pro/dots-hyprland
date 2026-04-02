@@ -41,7 +41,10 @@ QtObject {
     }
 
     function cancelRecording() {
-        root.running = false
+        if (root.running) {
+            stopRecording()
+            return
+        }
         startProc.running = false
         stopProc.running = false
     }
