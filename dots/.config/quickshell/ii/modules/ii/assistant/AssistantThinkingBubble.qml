@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import qs.modules.common
 import qs.modules.common.widgets
 
@@ -19,19 +18,11 @@ Item {
 
     implicitHeight: collapsed ? header.implicitHeight + 4 : columnLayout.implicitHeight
     Layout.fillWidth: true
-
     Behavior on implicitHeight {
+        enabled: root.completed
         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
     }
-
-    layer.enabled: true
-    layer.effect: OpacityMask {
-        maskSource: Rectangle {
-            width: root.width
-            height: root.height
-            radius: Appearance.rounding.small
-        }
-    }
+    clip: true
 
     Timer {
         id: phaseTimer
@@ -70,7 +61,7 @@ Item {
                 spacing: 8
 
                 MaterialSymbol {
-                    text: "psychology"
+                    text: "linked_services"
                     iconSize: Appearance.font.pixelSize.normal
                     color: Appearance.colors.colSubtext
                 }
@@ -108,8 +99,8 @@ Item {
             Layout.fillWidth: true
             clip: true
             implicitHeight: root.collapsed ? 0 : content.implicitHeight + 8
-
             Behavior on implicitHeight {
+                enabled: root.completed
                 NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
 

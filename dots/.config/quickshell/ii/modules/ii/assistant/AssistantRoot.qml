@@ -9,25 +9,28 @@ import qs.modules.ii.assistant
 Scope {
     id: root
 
-    readonly property string voiceAssistantBin:   "/home/archer/.local/bin/voice-assistant"
-    readonly property string whisperAssistantBin: "/home/archer/.local/bin/whisper-assistant"
+    // Expose loader so Assistant.qml IPC can reach controller for reset/close
+    property alias win: win
 
-    function openAssistant()   { GlobalStates.voiceAssistantActive = true }
-    function closeAssistant()  { GlobalStates.voiceAssistantActive = false }
-    function toggleAssistant() { GlobalStates.voiceAssistantActive = !GlobalStates.voiceAssistantActive }
-
-    function openAndListen() {
+    function openAssistant()   {
         GlobalStates.voiceAssistantActive = true
-        if (win.item) win.item.triggerMic()
+    }
+    function closeAssistant() {
+        win.item?.controller?.reset?.()
+        GlobalStates.voiceAssistantActive = false
+    }
+    function toggleAssistant() {
+        if (GlobalStates.voiceAssistantActive) closeAssistant()
+        else openAssistant()
     }
 
     function receiveEvent(event, payload) {
-        if (win.item) win.item.receiveEvent(event, payload)
+        win.item?.receiveEvent(event, payload)
     }
 
     function submitMessage(text) {
         GlobalStates.voiceAssistantActive = true
-        if (win.item) win.item.receiveEvent("userMessage", text)
+        win.item?.receiveEvent("userMessage", text)
     }
 
     Loader {
@@ -35,8 +38,7 @@ Scope {
         active: true
         asynchronous: true
         sourceComponent: AssistantWindow {
-            voiceAssistantBin:   root.voiceAssistantBin
-            whisperAssistantBin: root.whisperAssistantBin
+            assistantRoot:      root
         }
     }
 }

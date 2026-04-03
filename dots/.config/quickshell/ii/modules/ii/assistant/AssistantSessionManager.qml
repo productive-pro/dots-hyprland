@@ -5,60 +5,44 @@ import QtQuick
 QtObject {
     id: root
 
-    property string state: "hidden"
-    property bool processing: false
+    // States: IDLE | PROCESSING | INTERRUPTED
+    property string state: "IDLE"
     property bool streamMode: true
     property var messages: []
-    property string transcript: ""
-    property int transcriptWordCount: 0
-    property string transcriptMode: ""
-    property int transcriptCountdown: 0
-    property string modelName: ""
-    property string agentId: ""
     property string composerDraft: ""
     property string lastSentUserText: ""
+    property string modelName: ""
+    property string agentId: ""
+    property int activeMessageIndex: -1
+    property QtObject tokenCount: QtObject {
+        property int input: -1
+        property int output: -1
+        property int total: -1
+    }
+    property string activeCommand: ""
+    property var commandSuggestions: []
+    property string commandDescription: ""
 
+    readonly property bool isIdle: state === "IDLE"
+    readonly property bool isProcessing: state === "PROCESSING"
+    readonly property bool isInterrupted: state === "INTERRUPTED"
     readonly property bool isChatVisible: messages.length > 0
-    readonly property bool isListeningOrTranscript: state === "listening" || state === "transcript-review"
-    readonly property bool isBusy: processing || state === "thinking" || state === "responding" || state === "sending"
+    readonly property bool isBusy: isProcessing
 
-    function resetTransient() {
-        state = "hidden"
-        processing = false
-        transcript = ""
-        transcriptWordCount = 0
-        transcriptMode = ""
-        transcriptCountdown = 0
-        composerDraft = ""
-        lastSentUserText = ""
+    function setState(nextState) {
+        state = nextState
     }
 
-    function beginListening() {
-        state = "listening"
-        processing = true
-        transcript = ""
-        transcriptWordCount = 0
-        transcriptMode = ""
-        transcriptCountdown = 0
-        composerDraft = ""
+    function beginProcessing() {
+        state = "PROCESSING"
     }
 
-    function beginTranscriptReview(text, wordCount) {
-        transcript = (text || "").trim()
-        transcriptWordCount = wordCount || 0
-        state = "transcript-review"
-        processing = false
-        transcriptMode = transcriptWordCount < 10 ? "auto" : "manual"
-        transcriptCountdown = transcriptMode === "auto" ? 3 : 0
-        composerDraft = transcript
+    function interrupt() {
+        state = "INTERRUPTED"
     }
 
-    function clearTranscript() {
-        transcript = ""
-        transcriptWordCount = 0
-        transcriptMode = ""
-        transcriptCountdown = 0
-        composerDraft = ""
+    function beginIdle() {
+        state = "IDLE"
     }
 
     function addMessage(role, text, kind, extra) {
@@ -70,11 +54,10 @@ QtObject {
             done: true,
             editing: false,
             renderMarkdown: true,
+            events: [],
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
-        if (extra) {
-            Object.assign(message, extra)
-        }
+        if (extra) Object.assign(message, extra)
         const next = messages.slice()
         next.push(message)
         messages = next
@@ -90,6 +73,23 @@ QtObject {
         messages = next
     }
 
+    function appendMessageEvent(index, event) {
+        if (index < 0 || index >= messages.length) return -1
+        const next = messages.slice()
+        const item = Object.assign({}, next[index])
+        const current = Array.isArray(item.events) ? item.events.slice() : []
+        current.push(Object.assign({
+            kind: "event",
+            title: "",
+            text: "",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }, event || {}))
+        item.events = current
+        next[index] = item
+        messages = next
+        return current.length - 1
+    }
+
     function removeMessage(index) {
         if (index < 0 || index >= messages.length) return
         const next = messages.slice()
@@ -99,5 +99,25 @@ QtObject {
 
     function clearMessages() {
         messages = []
+        activeMessageIndex = -1
+    }
+
+    function setTokenCount(input, output, total) {
+        tokenCount.input = input
+        tokenCount.output = output
+        tokenCount.total = total
+    }
+
+    function resetSession() {
+        clearMessages()
+        composerDraft = ""
+        lastSentUserText = ""
+        state = "IDLE"
+        activeCommand = ""
+        commandSuggestions = []
+        commandDescription = ""
+        tokenCount.input = -1
+        tokenCount.output = -1
+        tokenCount.total = -1
     }
 }
