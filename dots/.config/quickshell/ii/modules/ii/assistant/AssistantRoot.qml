@@ -37,8 +37,8 @@ Scope {
         id: win
         active: true
         asynchronous: true
-        sourceComponent: AssistantWindow {
-            assistantRoot:      root
+        sourceComponent: AgentWindow {
+            assistantRoot: root
         }
     }
 }

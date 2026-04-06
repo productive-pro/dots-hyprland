@@ -461,6 +461,13 @@ Item {
             break
         case "memoryUpdate":
             break
+        case "memoryBlocks": {
+            // Memory blocks from Letta API: [{ label, value }, ...]
+            const data = parsePayload(payload)
+            const blocks = data.blocks || []
+            session.setMemoryBlocks(blocks)
+            break
+        }
         case "toolCall": {
             const data = parsePayload(payload)
             const name = data?.name || "tool"

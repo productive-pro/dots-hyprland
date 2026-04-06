@@ -52,10 +52,4 @@ Singleton {
             root.superDown = false
         }
     }
-
-    GlobalShortcut {
-        name: "agentModeToggle"
-        description: "Toggle agent workspace mode (Ctrl+O when assistant is open)"
-        onPressed: root.agentModeActive = !root.agentModeActive
-    }
 }

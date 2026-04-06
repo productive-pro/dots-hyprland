@@ -22,6 +22,7 @@ QtObject {
     property string activeCommand: ""
     property var commandSuggestions: []
     property string commandDescription: ""
+    property var memoryBlocks: []  // Core memory blocks from Letta API
 
     readonly property bool isIdle: state === "IDLE"
     readonly property bool isProcessing: state === "PROCESSING"
@@ -119,5 +120,11 @@ QtObject {
         tokenCount.input = -1
         tokenCount.output = -1
         tokenCount.total = -1
+        memoryBlocks = []
+    }
+
+    function setMemoryBlocks(blocks) {
+        // blocks: [{ label: "persona", value: "..." }, ...]
+        memoryBlocks = blocks
     }
 }

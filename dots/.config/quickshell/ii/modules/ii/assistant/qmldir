@@ -15,3 +15,10 @@ AssistantMessageBubble     1.0 AssistantMessageBubble.qml
 AssistantMarkdownMessage   1.0 AssistantMarkdownMessage.qml
 AssistantCodeBlock         1.0 AssistantCodeBlock.qml
 AssistantThinkingBubble    1.0 AssistantThinkingBubble.qml
+AgentWindow                1.0 AgentWindow.qml
+AgentChatColumn            1.0 AgentChatColumn.qml
+AgentWorkspacePane         1.0 AgentWorkspacePane.qml
+AgentToolFeed              1.0 AgentToolFeed.qml
+AgentStatusBar             1.0 AgentStatusBar.qml
+AgentMemoryView            1.0 AgentMemoryView.qml
+AgentSettingsPane          1.0 AgentSettingsPane.qml
