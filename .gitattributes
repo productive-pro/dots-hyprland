@@ -1,0 +1,8 @@
+# Protect your custom assistant module from upstream overwrites
+dots/.config/quickshell/ii/modules/ii/assistant/** merge=ours
+
+# Protect your starship config
+dots/.config/starship.toml merge=ours
+
+# Ignore local state
+.letta/ export-ignore
