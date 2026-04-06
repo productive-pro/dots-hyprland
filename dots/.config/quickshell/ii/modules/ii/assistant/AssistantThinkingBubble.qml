@@ -18,6 +18,13 @@ Item {
 
     implicitHeight: collapsed ? header.implicitHeight + 4 : columnLayout.implicitHeight
     Layout.fillWidth: true
+    opacity: 0
+    Component.onCompleted: {
+        opacity = 1
+    }
+    Behavior on opacity {
+        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+    }
     Behavior on implicitHeight {
         enabled: root.completed
         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
@@ -68,9 +75,13 @@ Item {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: root.completed ? "Thought" : `Thinking${".".repeat(root.phase)}`
+                    // Use a fixed-width hint so the dots ("..."/"") don't
+                    // cause text re-layout on every phase tick.
+                    text: root.completed ? "Thought"
+                        : ["Thinking", "Thinking.", "Thinking..", "Thinking..."][root.phase]
                     font.pixelSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colSubtext
+                    elide: Text.ElideRight
                 }
 
                 RippleButton {

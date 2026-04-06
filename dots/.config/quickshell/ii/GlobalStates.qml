@@ -13,6 +13,8 @@ Singleton {
     property bool crosshairOpen: false
     property bool sidebarLeftOpen: false
     property bool voiceAssistantActive: false
+    // Agent workspace mode — toggled by Ctrl+O via agentModeToggle shortcut
+    property bool agentModeActive: false
     property bool sidebarRightOpen: false
     property bool mediaControlsOpen: false
     property bool osdBrightnessOpen: false
@@ -49,5 +51,11 @@ Singleton {
         onReleased: {
             root.superDown = false
         }
+    }
+
+    GlobalShortcut {
+        name: "agentModeToggle"
+        description: "Toggle agent workspace mode (Ctrl+O when assistant is open)"
+        onPressed: root.agentModeActive = !root.agentModeActive
     }
 }

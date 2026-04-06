@@ -53,12 +53,22 @@ PanelWindow {
             Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         }
 
+        focus: true
+        Keys.onPressed: (event) => {
+            if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_O) {
+                root.wideMode = !root.wideMode
+                event.accepted = true
+            }
+        }
+        Keys.onEscapePressed: {
+            root.closeAssistant()
+        }
+
         Rectangle {
             id: card
-            // Width: compact when empty, grows with messages
+            // Width: compact when empty, wide once any messages exist
             readonly property real widthFrac: root.wideMode ? 0.80
-                : controller.messages.length === 0 ? 0.50
-                : controller.messages.length < 3 ? 0.60 : 0.70
+                : controller.messages.length === 0 ? 0.50 : 0.70
             width:  Math.min(parent.width * widthFrac, root.wideMode ? 1400 : 1100)
             // Height: input only until first message, then grows up to 80%
             readonly property real maxH: cardAnchor.parent.height * 0.80
@@ -69,6 +79,7 @@ PanelWindow {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             Behavior on width  { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
 
             radius: Appearance.rounding.large
             color: Qt.rgba(Appearance.m3colors.m3surfaceContainer.r,
@@ -202,16 +213,6 @@ PanelWindow {
         } // card Rectangle
     } // cardAnchor
 
-    Keys.onPressed: (event) => {
-        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_O) {
-            root.wideMode = !root.wideMode
-            event.accepted = true
-        }
-    }
-
-    Keys.onEscapePressed: {
-        root.closeAssistant()
-    }
 
     AssistantController {
         id: controller

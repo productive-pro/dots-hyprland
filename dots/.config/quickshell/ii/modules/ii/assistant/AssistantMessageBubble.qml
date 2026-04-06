@@ -60,6 +60,9 @@ Item {
 
     implicitHeight: card.implicitHeight + 4
     width: parent ? parent.width : implicitWidth
+    opacity: 0
+    Component.onCompleted: opacity = 1
+    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
     Rectangle {
         id: card
@@ -182,7 +185,7 @@ Item {
                                     color: modelData.kind === "error"
                                         ? Appearance.colors.colError
                                         : modelData.kind === "approval"
-                                            ? Appearance.colors.colYellow
+                                            ? Appearance.colors.colTertiary
                                             : Appearance.colors.colSubtext
                                 }
 

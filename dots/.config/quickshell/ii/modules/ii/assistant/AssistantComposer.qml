@@ -139,18 +139,18 @@ Item {
                 buttonRadius: Appearance.rounding.full ?? 18
                 visible: root.processing
                 enabled: true
-                colBackground: Qt.rgba(Appearance.colors.colRed.r,
-                                       Appearance.colors.colRed.g,
-                                       Appearance.colors.colRed.b, 0.16)
-                colBackgroundHover: Qt.rgba(Appearance.colors.colRed.r,
-                                             Appearance.colors.colRed.g,
-                                             Appearance.colors.colRed.b, 0.24)
+                colBackground: Qt.rgba(Appearance.colors.colError.r,
+                                       Appearance.colors.colError.g,
+                                       Appearance.colors.colError.b, 0.16)
+                colBackgroundHover: Qt.rgba(Appearance.colors.colError.r,
+                                             Appearance.colors.colError.g,
+                                             Appearance.colors.colError.b, 0.24)
                 onClicked: root.stopRequested()
                 contentItem: MaterialSymbol {
                     anchors.centerIn: parent
                     text: "stop_circle"
                     iconSize: 20
-                    color: Appearance.colors.colRed
+                    color: Appearance.colors.colError
                 }
             }
         } // inputRow

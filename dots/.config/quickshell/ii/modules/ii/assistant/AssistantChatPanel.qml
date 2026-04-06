@@ -24,9 +24,22 @@ Item {
     implicitHeight: desiredHeight
     Layout.fillWidth: true
 
+    // Debounce auto-scroll: batch-up contentHeight changes so streaming
+    // tokens don't fire positionViewAtEnd() on every single flush.
+    Timer {
+        id: scrollDebounce
+        interval: 48
+        repeat: false
+        onTriggered: msgList.positionViewAtEnd()
+    }
+
     function scrollToEnd(force) {
         if (!force && !autoStick) return
-        Qt.callLater(() => msgList.positionViewAtEnd())
+        if (force) {
+            Qt.callLater(() => msgList.positionViewAtEnd())
+        } else {
+            if (!scrollDebounce.running) scrollDebounce.restart()
+        }
     }
 
     ScrollEdgeFade { z: 1; target: msgList; vertical: true }
@@ -38,10 +51,10 @@ Item {
         clip: true
         model: root.messages
 
-        onContentHeightChanged: { if (root.autoStick) root.scrollToEnd(true) }
+        onContentHeightChanged: { if (root.autoStick) root.scrollToEnd(false) }
         onCountChanged:         { if (root.autoStick) root.scrollToEnd(true) }
         onMovementStarted:      { root.autoStick = false }
-        onMovementEnded:        { if (atYEnd) root.autoStick = true }
+        onMovementEnded:        { if (atYEnd) { root.autoStick = true; root.scrollToEnd(true) } }
         onAtYEndChanged:        { if (atYEnd) root.autoStick = true }
 
         // ── Message delegate ─────────────────────────────────────────────
@@ -93,6 +106,11 @@ Item {
             readonly property var modelInfo: resolveModelInfo(modelData?.model || root.panelRoot?.modelName || "")
 
             height: (isThink ? thinkBubble.implicitHeight : msgRect.implicitHeight) + 2
+            Behavior on height {
+                // Only animate height for already-visible delegates (not initial placement)
+                enabled: delegateItem.ListView.isCurrentItem === false
+                NumberAnimation { duration: 80; easing.type: Easing.OutCubic }
+            }
 
             // Think block — collapsible, full width
             AssistantThinkingBubble {

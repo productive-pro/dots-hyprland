@@ -94,327 +94,105 @@ Item {
     property var commandSuggestions: []
     property string commandQuery: ""
     property bool slashCommandSilent: false
+
+    // ── Slash command catalog ────────────────────────────────────────────────
+    // Commands: /agent, /conv, /mem, /chat, /config, /model, /dev, /help, /status, /stop
+    // Each has subcommands exposed in commandSubcommands for autocomplete.
     property var commandSubcommands: [
         {
-            name: "agents",
+            name: "agent",
             children: [
-                { name: "list", description: "List agents" },
-                { name: "show", description: "Show one agent" },
-                { name: "new", description: "Create a new agent" },
-                { name: "use", description: "Set the active agent" },
-                { name: "delete", description: "Delete an agent" },
-                { name: "export", description: "Export an agent" },
-                { name: "import", description: "Import an agent" }
+                { name: "list",   description: "List all agents" },
+                { name: "new",    description: "Create agent: /agent new <name> [--model <id>]" },
+                { name: "use",    description: "Switch agent: /agent use <index|name|id>" },
+                { name: "show",   description: "Agent details: /agent show <index|name|id>" },
+                { name: "update", description: "Rename/describe: /agent update <ref> --name <n>" },
+                { name: "delete", description: "Delete agent: /agent delete <index|name|id>" },
+                { name: "pin",    description: "Pin agent: /agent pin <ref>" },
+                { name: "unpin",  description: "Unpin agent: /agent unpin <ref>" },
+                { name: "model",  description: "Show or set model: /agent model [id]" },
             ]
         },
         {
-            name: "resume",
+            name: "conv",
             children: [
-                { name: "list", description: "List conversations" },
-                { name: "use", description: "Resume a conversation" }
+                { name: "list",    description: "List conversations" },
+                { name: "new",     description: "New conversation: /conv new [name]" },
+                { name: "use",     description: "Switch conversation: /conv use <index|id>" },
+                { name: "clear",   description: "Clear current conversation" },
+                { name: "compact", description: "Summarize history: /conv compact [sliding_window|summary]" },
+                { name: "search",  description: "Search messages: /conv search <query>" },
+                { name: "context", description: "Context window stats" },
+                { name: "history", description: "Recent messages: /conv history [n]" },
             ]
         },
         {
-            name: "messages",
+            name: "mem",
             children: [
-                { name: "ask", description: "Send a non-streaming message" },
-                { name: "stream", description: "Send a streaming message" },
-                { name: "history", description: "Show recent messages" }
+                { name: "blocks",   description: "View memory blocks" },
+                { name: "passages", description: "Search archival: /mem passages [query]" },
             ]
         },
         {
-            name: "memory",
+            name: "chat",
             children: [
-                { name: "blocks", description: "Show memory blocks" },
-                { name: "passages", description: "Search archival memory" }
+                { name: "ask",    description: "Non-streaming message: /chat ask <text>" },
+                { name: "stream", description: "Streaming message: /chat stream <text>" },
             ]
         },
         {
             name: "config",
             children: [
-                { name: "system", description: "View or set the system prompt" },
-                { name: "init", description: "Initialize memory blocks" },
-                { name: "doctor", description: "Audit the agent" },
-                { name: "statusline", description: "Show the statusline config" },
-                { name: "sleeptime", description: "Configure reflection" }
+                { name: "show",       description: "Show app config (base_url, embedding…)" },
+                { name: "set",        description: "Persist a value: /config set <key> <val>" },
+                { name: "unset",      description: "Revert to default: /config unset <key>" },
+                { name: "system",     description: "View/set agent system prompt" },
+                { name: "init",       description: "Reinitialize memory blocks" },
+                { name: "doctor",     description: "Audit agent state" },
+                { name: "sleeptime",  description: "Configure background reflection" },
+                { name: "tools",      description: "List available tools" },
+                { name: "attach",     description: "Attach tool: /config attach <id>" },
+                { name: "detach",     description: "Detach tool: /config detach <id>" },
+                { name: "secret",     description: "Manage secrets: /config secret [list|set|delete]" },
+                { name: "mcp",        description: "Manage MCP servers: /config mcp [list|add|tools|attach]" },
             ]
         },
         {
-            name: "models",
+            name: "model",
             children: [
-                { name: "list", description: "List available models" },
-                { name: "current", description: "Show the current model" },
-                { name: "set", description: "Set the active model" }
-            ]
-        },
-        {
-            name: "files",
-            children: [
-                { name: "add", description: "Add a file to a folder" },
-                { name: "attach", description: "Attach a folder to the agent" },
-                { name: "list", description: "List folders" }
-            ]
-        },
-        {
-            name: "mcp",
-            children: [
-                { name: "add", description: "Add an MCP server" },
-                { name: "list", description: "List MCP servers" },
-                { name: "tools", description: "List tools for a server" },
-                { name: "attach", description: "Attach MCP tools to the agent" }
-            ]
-        },
-        {
-            name: "skills",
-            children: [
-                { name: "list", description: "List available skills" },
-                { name: "create", description: "Create a custom skill" }
+                { name: "list",  description: "List all models: /model list [filter]" },
+                { name: "use",   description: "Switch model — any handle accepted: /model use <index|provider/model>" },
+                { name: "set",   description: "Adjust settings: /model set temp|max_tokens|ctx|reasoning|parallel <value>" },
+                { name: "info",  description: "Full model details: /model info <index|handle>" },
+                { name: "embed", description: "Embedding config: /model embed [set <key> <val> | unset <key>]" },
             ]
         },
         {
             name: "dev",
             children: [
-                { name: "export", description: "Export the current agent" },
-                { name: "import", description: "Import an agent file" },
-                { name: "clone", description: "Clone the current agent" },
+                { name: "export",    description: "Export agent to file" },
+                { name: "import",    description: "Import agent from file: /dev import <path>" },
+                { name: "clone",     description: "Clone current agent: /dev clone [name]" },
                 { name: "recompile", description: "Reset and recompile" },
-                { name: "ade", description: "Open the agent editor" },
-                { name: "terminal", description: "Set up terminal shortcuts" },
-                { name: "server", description: "Start the local listener" }
             ]
         },
-        {
-            name: "sleep",
-            children: [
-                { name: "on", description: "Enable sleeptime" },
-                { name: "off", description: "Disable sleeptime" }
-            ]
-        },
-        {
-            name: "secret",
-            children: [
-                { name: "list", description: "List configured secrets" },
-                { name: "set", description: "Store a secret value" },
-                { name: "delete", description: "Delete a secret" }
-            ]
-        }
+        { name: "help",   children: [] },
+        { name: "status", children: [] },
+        { name: "stop",   children: [] },
     ]
+
+    // Flat top-level catalog for tab-completion prefix matching
     property var commandCatalog: [
-        {
-            name: "help",
-            description: "Show slash commands",
-            text: "/help",
-            execute: () => { root.sendText("/help"); return true }
-        },
-        {
-            name: "agents",
-            description: "List all agents",
-            text: "/agents",
-            execute: () => { root.sendText("/agents"); return true }
-        },
-        {
-            name: "new",
-            description: "Create a new agent",
-            text: "/new "
-        },
-        {
-            name: "retrieve",
-            description: "Get agent details",
-            text: "/retrieve "
-        },
-        {
-            name: "update",
-            description: "Update an agent",
-            text: "/update "
-        },
-        {
-            name: "delete",
-            description: "Delete an agent",
-            text: "/delete "
-        },
-        {
-            name: "pin",
-            description: "Pin an agent",
-            text: "/pin "
-        },
-        {
-            name: "unpin",
-            description: "Unpin an agent",
-            text: "/unpin "
-        },
-        {
-            name: "resume",
-            description: "List or resume conversations",
-            text: "/resume "
-        },
-        {
-            name: "clear",
-            description: "Clear all messages",
-            text: "/clear",
-            execute: () => { root.sendText("/clear"); return true }
-        },
-        {
-            name: "compact",
-            description: "Summarize history",
-            text: "/compact "
-        },
-        {
-            name: "search",
-            description: "Search messages",
-            text: "/search "
-        },
-        {
-            name: "context",
-            description: "Show context window",
-            text: "/context"
-        },
-        {
-            name: "ask",
-            description: "Send a non-streaming message",
-            text: "/ask "
-        },
-        {
-            name: "stream",
-            description: "Send a streaming message",
-            text: "/stream "
-        },
-        {
-            name: "history",
-            description: "Show recent messages",
-            text: "/history "
-        },
-        {
-            name: "blocks",
-            description: "View memory blocks",
-            text: "/blocks "
-        },
-        {
-            name: "passages",
-            description: "Search archival memory",
-            text: "/passages "
-        },
-        {
-            name: "tools",
-            description: "List available tools",
-            text: "/tools"
-        },
-        {
-            name: "attached",
-            description: "List attached tools",
-            text: "/attached"
-        },
-        {
-            name: "attach",
-            description: "Attach a tool",
-            text: "/attach "
-        },
-        {
-            name: "detach",
-            description: "Detach a tool",
-            text: "/detach "
-        },
-        {
-            name: "system",
-            description: "View or set the system prompt",
-            text: "/system "
-        },
-        {
-            name: "init",
-            description: "Initialize memory blocks",
-            text: "/init"
-        },
-        {
-            name: "doctor",
-            description: "Audit the agent",
-            text: "/doctor"
-        },
-        {
-            name: "statusline",
-            description: "List configured models",
-            text: "/statusline"
-        },
-        {
-            name: "sleeptime",
-            description: "Configure reflection",
-            text: "/sleeptime "
-        },
-        {
-            name: "mcp",
-            description: "Manage MCP servers",
-            text: "/mcp "
-        },
-        {
-            name: "secret",
-            description: "Manage secrets",
-            text: "/secret "
-        },
-        {
-            name: "skill",
-            description: "Create a custom skill",
-            text: "/skill "
-        },
-        {
-            name: "skills",
-            description: "List available skills",
-            text: "/skills"
-        },
-        {
-            name: "export",
-            description: "Export the current agent",
-            text: "/export"
-        },
-        {
-            name: "import",
-            description: "Import an agent file",
-            text: "/import "
-        },
-        {
-            name: "clone",
-            description: "Clone the current agent",
-            text: "/clone "
-        },
-        {
-            name: "recompile",
-            description: "Reset and recompile",
-            text: "/recompile"
-        },
-        {
-            name: "ade",
-            description: "Open the agent editor",
-            text: "/ade"
-        },
-        {
-            name: "terminal",
-            description: "Set up terminal shortcuts",
-            text: "/terminal"
-        },
-        {
-            name: "server",
-            description: "Start the local listener",
-            text: "/server"
-        },
-        {
-            name: "model",
-            description: "Show the active model name",
-            text: "/model"
-        },
-        {
-            name: "agent",
-            description: "Show the active agent id",
-            text: "/agent"
-        },
-        {
-            name: "status",
-            description: "Show model, agent, and token state",
-            text: "/status",
-            execute: () => { root.sendText("/status"); return true }
-        },
-        {
-            name: "stop",
-            description: "Cancel the current response",
-            text: "/stop",
-            execute: () => { root.sendText("/stop"); return true }
-        },
+        { name: "agent",  description: "Agent management",           text: "/agent "  },
+        { name: "conv",   description: "Conversation management",    text: "/conv "   },
+        { name: "mem",    description: "Memory blocks & search",     text: "/mem "    },
+        { name: "chat",   description: "Send message (ask/stream)",  text: "/chat "   },
+        { name: "config", description: "App config & agent config",         text: "/config " },
+        { name: "model",  description: "List/switch/configure models",      text: "/model " },
+        { name: "dev",    description: "Export, import, clone",      text: "/dev "    },
+        { name: "help",   description: "Show available commands",    text: "/help"    },
+        { name: "status", description: "Show model/agent state",     text: "/status"  },
+        { name: "stop",   description: "Cancel current response",    text: "/stop"    },
     ]
 
     signal scrollRequested(bool force)
@@ -487,7 +265,8 @@ Item {
 
         const subcommand = commandSubcommands.find((cmd) => cmd.name === query)
         let suggestions = []
-        if (subcommand && subcommand.children && (parts.length > 1 || hasTrailingSpace)) {
+        if (subcommand && subcommand.children && subcommand.children.length > 0) {
+            // Exact command match — show all subcommands (filtered by partial if present)
             const partial = parts.length > 1 ? (parts[1] || "").toLowerCase() : ""
             suggestions = subcommand.children
                 .filter((cmd) => cmd.name.indexOf(partial) === 0)
@@ -497,6 +276,7 @@ Item {
                     description: cmd.description
                 }))
         } else {
+            // Still typing root command — match against top-level catalog
             suggestions = commandCatalog
                 .filter((cmd) => cmd.name.indexOf(query) === 0)
                 .map((cmd) => ({
@@ -531,24 +311,58 @@ Item {
         ].join("\n")
     }
 
+    // ── Help text ─────────────────────────────────────────────────────────────
+    readonly property string helpText: [
+        "/agent  list | new | use | show | update | delete | pin | unpin | model",
+        "/conv   list | new | use | clear | compact | search | context | history",
+        "/mem    blocks | passages",
+        "/chat   ask | stream",
+        "/model  [list [filter]] | use <provider/model>  (any handle accepted)",
+        "        set temp|max_tokens|ctx|reasoning|parallel <val>",
+        "        info <ref> | embed [set <key> <val> | unset <key>]",
+        "/config show | set <key> <val> | unset <key>",
+        "        keys: base_url · embedding_model · embedding_endpoint",
+        "        system | init | doctor | sleeptime | tools | attach | detach | secret | mcp",
+        "/dev    export | import | clone | recompile",
+        "/status — show model, agent, and token state",
+        "/stop   — cancel current response",
+    ].join("\n")
+
     function executeCommand(rawText) {
         const input = (rawText || "").trim()
         if (!input.startsWith("/")) return false
 
-        const commandName = (input.slice(1).split(/\s+/)[0] || "").toLowerCase()
+        const parts = input.slice(1).split(/\s+/)
+        const commandName = (parts[0] || "").toLowerCase()
+        // Reconstruct args (everything after the top-level command)
+        const argsStr = parts.slice(1).join(" ")
 
-        if (commandName === "clear") {
-            session.resetSession()
+        // Pure client-side commands
+        if (commandName === "help") {
+            pushCommandOutput(input, root.helpText)
             session.beginIdle()
-            updateCommandSuggestions("")
-            slashCommandSilent = true
-            runSlashCommand(input)
+            return true
+        }
+
+        if (commandName === "status") {
+            pushCommandOutput(input, root.formatStatusSummary())
+            session.beginIdle()
             return true
         }
 
         if (commandName === "stop") {
             root.cancelRun()
             pushCommandOutput(input, "Current run cancelled.")
+            return true
+        }
+
+        // /conv clear is handled silently (mirrors the old /clear behaviour)
+        if (commandName === "conv" && argsStr.trim() === "clear") {
+            session.resetSession()
+            session.beginIdle()
+            updateCommandSuggestions("")
+            slashCommandSilent = true
+            runSlashCommand(input)
             return true
         }
 
@@ -562,7 +376,6 @@ Item {
         const input = (raw || "").trim()
         if (!input) return
         slashCommandInput = input
-        session.beginProcessing()
         slashProc.command = [
             "bash",
             "-lc",
@@ -571,7 +384,7 @@ Item {
         slashProc.running = true
     }
 
-    // ── Event handler (IPC from daemon) ─────────────────────────────────
+    // ── Event handler (IPC from daemon) ──────────────────────────────────────
     function receiveEvent(event, payload) {
         switch (event) {
         case "status":
@@ -580,7 +393,6 @@ Item {
                 pushEvent("status", "Thinking", "Assistant is preparing a reply")
             } else if (payload === "ready") {
                 session.beginIdle()
-                pushEvent("status", "Ready", "Assistant is idle")
             } else if (payload === "interrupted") {
                 session.interrupt()
                 pushEvent("status", "Interrupted", "Current run was cancelled")
@@ -598,6 +410,10 @@ Item {
             session.beginProcessing()
             break
         case "response":
+            // Non-streaming fallback: full reply arrived without streamStart/token/streamEnd.
+            // Finalise any in-flight streaming state defensively, then show the message.
+            streaming.finaliseThinking()
+            streaming.finaliseStream()
             session.addMessage("assistant", payload, "", {
                 model: session.modelName
             })
@@ -616,6 +432,7 @@ Item {
             }
             break
         case "thinkingStart":
+            // Only arrives on models that support extended thinking
             streaming.startThinking(payload)
             session.activeMessageIndex = streaming.activeThinkingIndex
             session.beginProcessing()
@@ -625,6 +442,7 @@ Item {
             streaming.appendThinking(payload)
             break
         case "thinkingEnd":
+            // Only arrives when thinkingStart was emitted
             pushEvent("thinking", "Thought", "Reasoning finished")
             streaming.finaliseThinking()
             session.activeMessageIndex = streaming.activeStreamingIndex
@@ -632,7 +450,6 @@ Item {
         case "streamStart":
             streaming.startStreaming()
             session.beginProcessing()
-            pushEvent("stream", "Streaming", "Assistant response started")
             break
         case "token":
             streaming.appendToLast(payload)
@@ -640,36 +457,28 @@ Item {
         case "streamEnd":
             timeoutTimer.stop()
             session.beginIdle()
-            pushEvent("stream", "Stream end", "Assistant response finished")
             streaming.finaliseStream()
             break
         case "memoryUpdate":
             break
         case "toolCall": {
             const data = parsePayload(payload)
-            const name = data?.tool_calls?.[0]?.name || data?.name || "tool"
-            const details = data?.tool_calls?.length > 0 ? JSON.stringify(data.tool_calls[0]) : (data.value || name)
-            pushEvent("tool", `Tool call: ${name}`, details)
+            const name = data?.name || "tool"
+            const details = data?.arguments ? `${name}(${data.arguments})` : name
+            pushEvent("tool", `Tool: ${name}`, details)
             break
         }
         case "toolReturn": {
             const data = parsePayload(payload)
-            const details = data?.tool_returns?.[0] ? JSON.stringify(data.tool_returns[0]) : (data.value || "Tool returned")
+            const details = data?.tool_return || "returned"
             pushEvent("tool", "Tool return", details)
-            break
-        }
-        case "approvalRequest": {
-            const data = parsePayload(payload)
-            const action = data?.action || data?.value || "an action"
-            pushEvent("approval", "Approval needed", action)
             break
         }
         case "usageStatistics": {
             const data = parsePayload(payload)
-            const stats = data.usage_statistics || data.usage || data.value || data
-            const input = stats.input_tokens ?? stats.prompt_tokens ?? stats.prompt ?? stats.input ?? -1
-            const output = stats.output_tokens ?? stats.completion_tokens ?? stats.completion ?? stats.output ?? -1
-            const total = stats.total_tokens ?? stats.total ?? ((input >= 0 && output >= 0) ? input + output : -1)
+            const input = data.prompt_tokens ?? data.input_tokens ?? data.input ?? -1
+            const output = data.completion_tokens ?? data.output_tokens ?? data.output ?? -1
+            const total = (input >= 0 && output >= 0) ? input + output : -1
             if (input >= 0 || output >= 0 || total >= 0) {
                 session.setTokenCount(input, output, total)
             }
@@ -690,7 +499,7 @@ Item {
         }
     }
 
-    // ── Send to Letta daemon ─────────────────────────────────────────────
+    // ── Send to Letta daemon ─────────────────────────────────────────────────
     function sendText(text) {
         const payload = (text || "").trim()
         if (!payload) return
@@ -742,7 +551,7 @@ Item {
         if (session.isProcessing) cancelRun()
     }
 
-    // ── Message editing helpers ──────────────────────────────────────────
+    // ── Message editing helpers ──────────────────────────────────────────────
     function toggleThinking(index) { streaming.toggleThinking(index) }
 
     function updateMessage(index, text) {

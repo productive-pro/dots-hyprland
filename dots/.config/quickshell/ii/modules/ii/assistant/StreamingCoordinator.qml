@@ -13,6 +13,7 @@ QtObject {
     signal scrollRequested(bool force)
 
     function startStreaming() {
+
         activeStreamingIndex = root.session.addMessage("assistant", "", "", {
             model: root.session.modelName,
             streaming: true,
@@ -24,6 +25,7 @@ QtObject {
     }
 
     function appendToLast(chunk) {
+        if (!chunk) return
         const messages = root.session.messages
         const last = activeStreamingIndex >= 0 && activeStreamingIndex < messages.length
             ? messages[activeStreamingIndex]
@@ -31,17 +33,22 @@ QtObject {
         if (!last || last.role !== "assistant" || last.streaming !== true) {
             startStreaming()
         }
+        
+        // Append directly
         const next = root.session.messages.slice()
-        const index = activeStreamingIndex >= 0 ? activeStreamingIndex : next.length - 1
-        const item = Object.assign({}, next[index])
-        item.text = (item.text || "") + (chunk || "")
-        item.done = false
-        next[index] = item
-        root.session.messages = next
-        scrollRequested(false)
+        const idx = activeStreamingIndex >= 0 ? activeStreamingIndex : next.length - 1
+        if (idx >= 0 && idx < next.length) {
+            const item = Object.assign({}, next[idx])
+            item.text = (item.text || "") + chunk
+            item.done = false
+            next[idx] = item
+            root.session.messages = next
+            root.scrollRequested(false)
+        }
     }
 
     function finaliseStream() {
+
         const messages = root.session.messages
         const index = activeStreamingIndex
         if (index >= 0 && index < messages.length && messages[index].role === "assistant" && messages[index].streaming === true) {
@@ -57,6 +64,7 @@ QtObject {
     }
 
     function startThinking(text) {
+
         root.session.addMessage("system", text || "", "think", {
             model: root.session.modelName,
             completed: false,
@@ -68,19 +76,23 @@ QtObject {
     }
 
     function appendThinking(chunk) {
+        if (!chunk) return
         if (activeThinkingIndex < 0 || activeThinkingIndex >= root.session.messages.length) {
             startThinking(chunk)
             return
         }
+        
+        // Append directly
         const next = root.session.messages.slice()
         const item = Object.assign({}, next[activeThinkingIndex])
-        item.text = item.text ? `${item.text}${chunk || ""}` : (chunk || "")
+        item.text = (item.text || "") + chunk
         next[activeThinkingIndex] = item
         root.session.messages = next
-        scrollRequested(false)
+        root.scrollRequested(false)
     }
 
     function finaliseThinking() {
+
         if (activeThinkingIndex < 0 || activeThinkingIndex >= root.session.messages.length) return
         const next = root.session.messages.slice()
         const item = Object.assign({}, next[activeThinkingIndex])
