@@ -1,6 +1,6 @@
 /diagnose.result
 /cache
-
+.letta
 # Ignore Python cache files
 __pycache__/
 *.py[cod]

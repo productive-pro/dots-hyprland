@@ -28,7 +28,7 @@ Item {
     property var    memFolders: []         // [{id, name, files:[{id,name}]}]
     property bool   loading: false
     property string errorText: ""
-    property string selectedFolderIndex: -1
+    property int    selectedFolderIndex: -1
     property string selectedFileId: ""
 
     // ── Silent process for /memory json ──────────────────────────────────────
