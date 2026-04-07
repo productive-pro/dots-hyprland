@@ -18,8 +18,7 @@ Item {
 
     // Tab indices
     readonly property int tabTools:  0
-    readonly property int tabStatus: 1
-    readonly property int tabMemory: 2
+    readonly property int tabMemory: 1
 
     property int activeTab: tabTools
 
@@ -31,47 +30,30 @@ Item {
             Appearance.m3colors.m3surfaceContainerLow.r,
             Appearance.m3colors.m3surfaceContainerLow.g,
             Appearance.m3colors.m3surfaceContainerLow.b, 0.80)
-        border.width: 1
-        border.color: Qt.rgba(
-            Appearance.colors.colOutlineVariant.r,
-            Appearance.colors.colOutlineVariant.g,
-            Appearance.colors.colOutlineVariant.b, 0.16)
+        border.width: 0
     }
 
     ColumnLayout {
         anchors { fill: parent; margins: 12; topMargin: 10 }
         spacing: 8
 
-        // ── Header row: title + tab chips + collapse button ────────────────
+        // Top Controls
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
-            // Pane title
-            StyledText {
-                text: "Agent Workspace"
-                font.pixelSize: Appearance.font.pixelSize.small
-                color: Appearance.colors.colSubtext
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Tab chips
             Repeater {
                 model: [
                     { label: "Tools",  icon: "construction" },
-                    { label: "Status", icon: "info"         },
                     { label: "Memory", icon: "memory"       }
                 ]
                 delegate: RippleButton {
                     required property var modelData
                     required property int index
-                    implicitHeight: 24
-                    implicitWidth: chipLabel.implicitWidth + chipIcon.implicitWidth + 18
+                    implicitHeight: 28
+                    implicitWidth: Math.max(80, lbl.implicitWidth + icn.implicitWidth + 20)
                     buttonRadius: Appearance.rounding.small
-                    colBackground: root.activeTab === index
-                        ? Appearance.colors.colSecondaryContainer
-                        : "transparent"
+                    colBackground: root.activeTab === index ? Appearance.colors.colSecondaryContainer : "transparent"
                     colBackgroundHover: Appearance.colors.colSecondaryContainerHover
                     onClicked: root.activeTab = index
 
@@ -79,36 +61,31 @@ Item {
                         anchors.centerIn: parent
                         spacing: 4
                         MaterialSymbol {
-                            id: chipIcon
+                            id: icn
                             text: modelData.icon
                             iconSize: Appearance.font.pixelSize.small
-                            color: root.activeTab === index
-                                ? Appearance.m3colors.m3onSecondaryContainer
-                                : Appearance.colors.colSubtext
+                            color: root.activeTab === index ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colSubtext
                         }
                         StyledText {
-                            id: chipLabel
+                            id: lbl
                             text: modelData.label
                             font.pixelSize: Appearance.font.pixelSize.small
-                            color: root.activeTab === index
-                                ? Appearance.m3colors.m3onSecondaryContainer
-                                : Appearance.colors.colSubtext
+                            color: root.activeTab === index ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colSubtext
                         }
                     }
                 }
             }
 
-            // Thin separator
+            Item { Layout.fillWidth: true } // spacer
+
             Rectangle {
                 width: 1; height: 18
-                color: Qt.rgba(Appearance.colors.colOutlineVariant.r,
-                               Appearance.colors.colOutlineVariant.g,
-                               Appearance.colors.colOutlineVariant.b, 0.25)
+                color: Qt.rgba(Appearance.colors.colOutlineVariant.r, Appearance.colors.colOutlineVariant.g, Appearance.colors.colOutlineVariant.b, 0.4)
+                Layout.leftMargin: 6
+                Layout.rightMargin: 6
             }
 
-            // Collapse button — returns to chat mode
             RippleButton {
-                id: collapseBtn
                 implicitWidth: 28; implicitHeight: 28
                 buttonRadius: Appearance.rounding.small
                 colBackground: "transparent"
@@ -120,20 +97,7 @@ Item {
                     iconSize: Appearance.font.pixelSize.normal
                     color: Appearance.colors.colSubtext
                 }
-                // Tooltip hint
-                ToolTip.visible: hovered
-                ToolTip.delay: 600
-                ToolTip.text: "Collapse agent workspace"
             }
-        }
-
-        // ── Divider ───────────────────────────────────────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Qt.rgba(Appearance.colors.colOutlineVariant.r,
-                           Appearance.colors.colOutlineVariant.g,
-                           Appearance.colors.colOutlineVariant.b, 0.18)
         }
 
         // ── Tab content stacked — all mounted, only one visible ────────────
@@ -148,18 +112,12 @@ Item {
                 controller: root.controller
             }
 
-            AgentStatusBar {
-                anchors { left: parent.left; right: parent.right
-                          verticalCenter: parent.verticalCenter }
-                visible: root.activeTab === root.tabStatus
-                controller: root.controller
-            }
-
             AgentMemoryView {
                 anchors.fill: parent
                 visible: root.activeTab === root.tabMemory
                 controller: root.controller
             }
+
         }
     }
 }

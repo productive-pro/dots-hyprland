@@ -48,11 +48,10 @@ Item {
         anchors.top: parent.top
         spacing: 0
 
-        Rectangle {
+        Item {
             id: header
             Layout.fillWidth: true
-            color: Appearance.colors.colSurfaceContainerHighest
-            implicitHeight: headerRow.implicitHeight + 10
+            implicitHeight: headerRow.implicitHeight + 8
 
             MouseArea {
                 anchors.fill: parent
@@ -64,21 +63,23 @@ Item {
             RowLayout {
                 id: headerRow
                 anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
+                anchors.margins: 4
+                spacing: 4
 
                 MaterialSymbol {
-                    text: "linked_services"
-                    iconSize: Appearance.font.pixelSize.normal
+                    visible: !root.completed
+                    text: "psychology"
+                    iconSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colSubtext
+                    opacity: root.phase % 2 === 0 ? 0.6 : 1.0
+                    Behavior on opacity { NumberAnimation { duration: 380 } }
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    // Use a fixed-width hint so the dots ("..."/"") don't
-                    // cause text re-layout on every phase tick.
-                    text: root.completed ? "Thought"
-                        : ["Thinking", "Thinking.", "Thinking..", "Thinking..."][root.phase]
+                    text: root.completed ? "Thought Process" : 
+                          (root.phase % 3 === 0 ? "Thinking..." : 
+                           root.phase % 3 === 1 ? "Analyzing..." : "Personalising...")
                     font.pixelSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colSubtext
                     elide: Text.ElideRight
@@ -86,8 +87,9 @@ Item {
 
                 RippleButton {
                     visible: root.completed
-                    implicitWidth: 28
-                    implicitHeight: 28
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    buttonRadius: 12
                     colBackground: "transparent"
                     colBackgroundHover: Appearance.colors.colLayer2Hover
                     onClicked: root.toggleRequested()
@@ -96,12 +98,14 @@ Item {
                         text: "keyboard_arrow_down"
                         iconSize: Appearance.font.pixelSize.normal
                         color: Appearance.colors.colSubtext
-                        rotation: root.collapsed ? 0 : 180
+                        rotation: root.collapsed ? -90 : 0
                         Behavior on rotation {
                             NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
                         }
                     }
                 }
+                
+                Item { Layout.fillWidth: true } // alignment spacing
             }
         }
 
@@ -115,14 +119,23 @@ Item {
                 NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
             }
 
-            Rectangle {
+            Item {
                 id: content
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                radius: Appearance.rounding.small
-                color: Appearance.colors.colLayer2
                 implicitHeight: markdown.implicitHeight + 10
+
+                // Render as slightly indented and bordered on the left like a blockquote
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.margins: 2
+                    width: 2
+                    radius: 1
+                    color: Appearance.colors.colOutlineVariant
+                }
 
                 AssistantMarkdownMessage {
                     id: markdown
@@ -130,10 +143,13 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.margins: 6
+                    anchors.leftMargin: 12 // shift past the border line
                     content: root.text
                     renderMarkdown: true
                     enableMouseSelection: true
                     messageData: root.messageData
+                    userOnPrimary: false // Forces standard text
+                    opacity: 0.8 // DIM reasoning text
                 }
             }
         }

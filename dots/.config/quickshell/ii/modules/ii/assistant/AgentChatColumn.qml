@@ -30,9 +30,124 @@ Item {
     readonly property real slashStripHeight:
         slashStrip.visible ? (slashStrip.implicitHeight + 6) : 0
 
+    state: root.controller.messages.length === 0 ? "PROMPTING" : "CHAT"
+
+    states: [
+        State {
+            name: "PROMPTING"
+            PropertyChanges { target: topNav; implicitHeight: 0; opacity: 0; visible: false }
+        },
+        State {
+            name: "CHAT"
+            PropertyChanges { target: topNav; implicitHeight: 40; opacity: 1; visible: true }
+        }
+    ]
+
+    transitions: Transition {
+        NumberAnimation {
+            properties: "implicitHeight,opacity"
+            duration: 160
+            easing.type: Easing.OutCubic
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 6
+
+        // ── Top Navigation / Status Bar ───────────────────────────────────
+        Item {
+            id: topNav
+            Layout.fillWidth: true
+            
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 4
+                anchors.rightMargin: 4
+                spacing: 12
+                
+                // State pill
+                Rectangle {
+                    implicitWidth: stateLabel.implicitWidth + 16
+                    implicitHeight: 24
+                    radius: Appearance.rounding.small
+                    color: {
+                        const s = root.controller.state
+                        if (s === "PROCESSING")  return Qt.rgba(Appearance.colors.colPrimary.r, Appearance.colors.colPrimary.g, Appearance.colors.colPrimary.b, 0.18)
+                        if (s === "INTERRUPTED") return Qt.rgba(Appearance.colors.colError.r, Appearance.colors.colError.g, Appearance.colors.colError.b, 0.18)
+                        return Qt.rgba(Appearance.colors.colSecondaryContainer.r, Appearance.colors.colSecondaryContainer.g, Appearance.colors.colSecondaryContainer.b, 0.72)
+                    }
+
+                    SequentialAnimation on opacity {
+                        running: root.controller.state === "PROCESSING"
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.55; duration: 900; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 1.0;  duration: 900; easing.type: Easing.InOutSine }
+                    }
+                    opacity: 1.0
+
+                    StyledText {
+                        id: stateLabel
+                        anchors.centerIn: parent
+                        text: {
+                            const s = root.controller.state
+                            if (s === "PROCESSING")  return "● RUNNING"
+                            if (s === "INTERRUPTED") return "✕ STOPPED"
+                            return ""
+                        }
+                        font.pixelSize: Appearance.font.pixelSize.tiny
+                        font.family: Appearance.font.family.monospace
+                        color: {
+                            const s = root.controller.state
+                            if (s === "PROCESSING")  return Appearance.colors.colPrimary
+                            if (s === "INTERRUPTED") return Appearance.colors.colError
+                            return Appearance.colors.colSubtext
+                        }
+                    }
+                }
+
+                // Model name
+                RowLayout {
+                    spacing: 5
+                    MaterialSymbol {
+                        text: "neurology"
+                        iconSize: Appearance.font.pixelSize.small
+                        color: Appearance.colors.colSubtext
+                    }
+                    StyledText {
+                        text: root.controller.modelName ? root.controller.modelName.split("/").pop() : "—"
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurface
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
+                }
+                
+                Item { Layout.fillWidth: true }
+                
+                // Context percentage indicator
+                RowLayout {
+                    visible: root.controller.tokenCount.total >= 0
+                    spacing: 4
+                    MaterialSymbol {
+                        text: "data_usage"
+                        iconSize: Appearance.font.pixelSize.small
+                        color: Appearance.colors.colSubtext
+                    }
+                    StyledText {
+                        text: {
+                            const tc = root.controller.tokenCount;
+                            if (tc.total < 0) return "";
+                            // Default to 128000 context for percentage
+                            const pct = Math.min(100, Math.max(0, tc.total / 128000 * 100));
+                            return `${pct.toFixed(1)}% Context used`;
+                        }
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+        }
 
         // ── Message list ──────────────────────────────────────────────────
         AssistantChatPanel {

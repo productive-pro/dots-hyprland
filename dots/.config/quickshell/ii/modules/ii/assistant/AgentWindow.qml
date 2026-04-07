@@ -199,15 +199,9 @@ PanelWindow {
 
             // ── Visual style ──────────────────────────────────────────────
             radius: Appearance.rounding.large
-            color: Qt.rgba(
-                Appearance.m3colors.m3surfaceContainer.r,
-                Appearance.m3colors.m3surfaceContainer.g,
-                Appearance.m3colors.m3surfaceContainer.b, 0.97)
+            color: Appearance.colors.colLayer0
             border.width: 1
-            border.color: Qt.rgba(
-                Appearance.colors.colOutlineVariant.r,
-                Appearance.colors.colOutlineVariant.g,
-                Appearance.colors.colOutlineVariant.b, 0.18)
+            border.color: Appearance.colors.colLayer0Border
             clip: true
 
             // Eat all card-area clicks so scrim doesn't fire
@@ -218,9 +212,16 @@ PanelWindow {
             }
 
             // ── Interior layout ───────────────────────────────────────────
-            RowLayout {
-                anchors { fill: parent; margins: 12; topMargin: 14 }
-                spacing: 10
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.margins: 12
+                    Layout.topMargin: GlobalStates.agentModeActive ? 4 : 14
+                    spacing: 10
 
                 // ── Settings Loader ──
                 Loader {
@@ -298,6 +299,7 @@ PanelWindow {
                             settingsLoader.keepAlive = true
                         }
                     }
+                }
                 }
             }
         } // card Rectangle

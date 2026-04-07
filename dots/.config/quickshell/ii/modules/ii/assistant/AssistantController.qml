@@ -475,6 +475,18 @@ Item {
             pushEvent("tool", `Tool: ${name}`, details)
             break
         }
+        case "approvalRequest": {
+            const data = parsePayload(payload)
+            session.appendMessageEvent(session.activeMessageIndex, {
+                kind: "approvalReq",
+                title: `Approval: ${data.name || 'tool'}`,
+                tool_call_id: data.tool_call_id || "",
+                name: data.name || "tool",
+                arguments: data.arguments || "{}"
+            })
+            // Keep stream open visually if desired, but daemon exits
+            break
+        }
         case "toolReturn": {
             const data = parsePayload(payload)
             const details = data?.tool_return || "returned"
@@ -591,6 +603,13 @@ Item {
             const item = session.messages[i]
             if (item && item.role === "user") { sendText(item.text || ""); return }
         }
+    }
+
+    function respondToolApproval(tool_call_id, approved) {
+        if (!tool_call_id) return
+        const action = approved ? "approve" : "deny"
+        // Hide UI immediately by modifying the event block locally or relying on the new assistant stream
+        sendText(`/approve ${tool_call_id} ${action}`)
     }
 
 }
