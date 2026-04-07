@@ -1,21 +1,2 @@
-# Protect custom settings
-dots/.config/hypr/custom/keybinds.conf merge=ours
-dots/.config/hypr/hyprland/keybinds.conf merge=ours
-dots/.config/kdeglobals merge=ours
-dots/.config/kitty/kitty.conf merge=ours
-
-# Protect quickshell logic and assistant UI
-dots/.config/quickshell/agents.md merge=ours
-dots/.config/quickshell/audio/listen.wav merge=ours
-dots/.config/quickshell/ii/GlobalStates.qml merge=ours
-dots/.config/quickshell/ii/agents.md merge=ours
-dots/.config/quickshell/ii/modules/common/Appearance.qml merge=ours
-dots/.config/quickshell/ii/modules/common/Persistent.qml merge=ours
-dots/.config/quickshell/ii/modules/ii/assistant/** merge=ours
-dots/.config/quickshell/ii/modules/ii/cheatsheet/** merge=ours
-dots/.config/quickshell/ii/modules/waffle/looks/Looks.qml merge=ours
-dots/.config/quickshell/ii/panelFamilies/IllogicalImpulseFamily.qml merge=ours
-
 # Ignore local state
 .letta/ export-ignore
-.gitignore merge=ours
