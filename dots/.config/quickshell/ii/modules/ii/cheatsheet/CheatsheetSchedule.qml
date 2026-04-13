@@ -18,6 +18,23 @@ Item {
     implicitWidth: mainLayout.implicitWidth + sectionPad * 2
     implicitHeight: mainLayout.implicitHeight + sectionPad * 2
 
+    // ── Color aliases from Appearance system (dynamic/reactive) ───────────────
+    readonly property color clrBg:                Appearance.colors.colLayer0
+    readonly property color clrSurface:           Appearance.colors.colLayer1
+    readonly property color clrSurfaceHigh:       Appearance.colors.colLayer2
+    readonly property color clrSurfaceHighest:    Appearance.colors.colLayer3
+    readonly property color clrOutline:           Appearance.colors.colLayer0Border
+    readonly property color clrOutlineBright:     Appearance.colors.colLayer1Active
+    readonly property color clrPrimary:           Appearance.colors.colPrimary
+    readonly property color clrPrimaryContainer:  Appearance.colors.colLayer1
+    readonly property color clrSecondary:         Appearance.colors.colPrimaryHover
+    readonly property color clrOnPrimary:         Appearance.colors.colOnPrimary
+    readonly property color clrOnSurface:         Appearance.colors.colOnLayer1
+    readonly property color clrOnSurfaceVariant:  Appearance.colors.colOnLayer1Inactive
+    readonly property color clrSubtext:           Appearance.colors.colSubtext
+    readonly property color clrError:             Appearance.m3colors.m3error
+    readonly property color clrWarning:           Appearance.m3colors.m3tertiary
+
     // ── State ─────────────────────────────────────────────────
     property bool showFullSchedule: false
     property bool editingPath: false
@@ -43,7 +60,6 @@ Item {
         if (t === "review")  return "#ffd600";
         return "#90a4ae";
     }
-
 
     // ── JSON file reader ──────────────────────────────────────
     property var parsedDays: ({})
@@ -99,6 +115,15 @@ Item {
     property bool hasData: Object.keys(root.parsedDays).length > 0
     property bool todayHasEvents: (root.parsedDays[root.todayStr] || []).length > 0
 
+    // ── Root background ───────────────────────────────────────
+    Rectangle {
+        anchors.fill: parent
+        color: root.clrBg
+        radius: Appearance.rounding.large || 12
+        
+        Behavior on color { ColorAnimation { duration: 200 } }
+    }
+
     // ── Layout ────────────────────────────────────────────────
     ColumnLayout {
         id: mainLayout
@@ -106,51 +131,84 @@ Item {
             fill: parent
             margins: root.sectionPad
         }
-        spacing: 16
+        spacing: 14
 
         // ── Header row ──────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: 10
 
-            MaterialSymbol {
-                text: "calendar_month"
-                iconSize: Appearance.font.pixelSize.title
-                color: Appearance.colors.colTheme
+            // Calendar icon container — subtle tinted chip
+            Rectangle {
+                width: 36; height: 36
+                radius: 10
+                color: Qt.rgba(
+                    parseInt(root.clrPrimary.toString().slice(1,3), 16) / 255,
+                    parseInt(root.clrPrimary.toString().slice(3,5), 16) / 255,
+                    parseInt(root.clrPrimary.toString().slice(5,7), 16) / 255,
+                    0.10
+                )
+                
+                Behavior on color { ColorAnimation { duration: 200 } }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "calendar_month"
+                    iconSize: Appearance.font.pixelSize.normal
+                    color: root.clrPrimary
+                }
             }
 
-            StyledText {
-                text: root.showFullSchedule ? "Full Schedule" : root.todayStr
-                font {
-                    family: Appearance.font.family.title
-                    pixelSize: Appearance.font.pixelSize.title
-                    variableAxes: Appearance.font.variableAxes.title
+            ColumnLayout {
+                spacing: 1
+                Layout.fillWidth: false
+
+                StyledText {
+                    text: root.showFullSchedule ? "Full Schedule" : "Today"
+                    font {
+                        family: Appearance.font.family.title
+                        pixelSize: Appearance.font.pixelSize.title
+                        variableAxes: Appearance.font.variableAxes.title
+                    }
+                    color: root.clrOnPrimary
                 }
-                color: Appearance.colors.colOnLayer0
+
+                StyledText {
+                    text: root.todayStr
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: root.clrSubtext
+                }
+            }
+
+            Item {
                 Layout.fillWidth: true
             }
 
             // Path editor toggle chip
-            RippleButton {
-                implicitHeight: 34
-                implicitWidth: pathEditRow.implicitWidth + 24
-                buttonRadius: Appearance.rounding.full
-                colBackground: root.editingPath
-                    ? Appearance.colors.colSecondaryContainer
-                    : Appearance.colors.colLayer2
+            Rectangle {
+                implicitHeight: 32
+                implicitWidth: pathEditRowInner.implicitWidth + 20
+                radius: 8
+                color: root.editingPath
+                    ? Qt.rgba(0.63, 0.63, 0.67, 0.18)
+                    : Qt.rgba(1, 1, 1, 0.05)
+                border.width: 1
+                border.color: root.editingPath
+                    ? Qt.rgba(0.63, 0.63, 0.67, 0.35)
+                    : root.clrOutline
 
-                onClicked: root.editingPath = !root.editingPath
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                contentItem: RowLayout {
-                    id: pathEditRow
-                    spacing: 6
+                RowLayout {
+                    id: pathEditRowInner
+                    spacing: 5
                     anchors.centerIn: parent
+
                     MaterialSymbol {
                         text: root.editingPath ? "close" : "folder_open"
-                        iconSize: Appearance.font.pixelSize.normal
-                        color: root.editingPath
-                            ? Appearance.colors.colOnSecondaryContainer
-                            : Appearance.colors.colOnLayer2
+                        iconSize: Appearance.font.pixelSize.small
+                        color: root.editingPath ? root.clrPrimary : root.clrOnSurfaceVariant
                     }
                     StyledText {
                         text: {
@@ -158,141 +216,201 @@ Item {
                             if (Persistent.states.cheatsheet.schedulePath === "") return "Set Path";
                             return "Change";
                         }
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: root.editingPath
-                            ? Appearance.colors.colOnSecondaryContainer
-                            : Appearance.colors.colOnLayer2
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.editingPath ? root.clrPrimary : root.clrOnSurfaceVariant
                     }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.editingPath = !root.editingPath
                 }
             }
 
             // Show Full / Today toggle
-            RippleButton {
+            Rectangle {
                 visible: root.hasData
-                implicitHeight: 34
-                implicitWidth: toggleRow.implicitWidth + 24
-                buttonRadius: Appearance.rounding.full
-                colBackground: root.showFullSchedule
-                    ? Appearance.colors.colPrimaryContainer
-                    : Appearance.colors.colLayer2
+                implicitHeight: 32
+                implicitWidth: toggleRowInner.implicitWidth + 20
+                radius: 8
+                color: root.showFullSchedule
+                    ? Qt.rgba(0.63, 0.63, 0.67, 0.18)
+                    : Qt.rgba(1, 1, 1, 0.05)
+                border.width: 1
+                border.color: root.showFullSchedule
+                    ? Qt.rgba(0.63, 0.63, 0.67, 0.35)
+                    : root.clrOutline
 
-                onClicked: root.showFullSchedule = !root.showFullSchedule
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                contentItem: RowLayout {
-                    id: toggleRow
-                    spacing: 6
+                RowLayout {
+                    id: toggleRowInner
+                    spacing: 5
                     anchors.centerIn: parent
+
                     MaterialSymbol {
                         text: root.showFullSchedule ? "today" : "calendar_view_week"
-                        iconSize: Appearance.font.pixelSize.normal
-                        color: root.showFullSchedule
-                            ? Appearance.colors.colOnPrimaryContainer
-                            : Appearance.colors.colOnLayer2
+                        iconSize: Appearance.font.pixelSize.small
+                        color: root.showFullSchedule ? root.clrPrimary : root.clrOnSurfaceVariant
                     }
                     StyledText {
                         text: root.showFullSchedule ? "Today" : "Full"
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: root.showFullSchedule
-                            ? Appearance.colors.colOnPrimaryContainer
-                            : Appearance.colors.colOnLayer2
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: root.showFullSchedule ? root.clrPrimary : root.clrOnSurfaceVariant
                     }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.showFullSchedule = !root.showFullSchedule
                 }
             }
         }
+
+        // ── Thin separator line ──────────────────────────────
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: root.clrOutline            
+            Behavior on color { ColorAnimation { duration: 200 } }        }
 
         // ── Path editor (collapsible) ────────────────────────
         Rectangle {
             Layout.fillWidth: true
             visible: root.editingPath
-            implicitHeight: pathColumn.implicitHeight + 16
-            color: Appearance.colors.colLayer1
-            radius: Appearance.rounding.small
+            implicitHeight: pathColumn.implicitHeight + 20
+            color: root.clrSurface
+            radius: 10
             border.width: 1
-            border.color: Appearance.colors.colLayer1Border
+            border.color: root.clrOutlineBright
+            clip: true
+            
+            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on border.color { ColorAnimation { duration: 200 } }
+
+            // Top accent line
+            Rectangle {
+                width: parent.width; height: 2
+                anchors.top: parent.top
+                radius: 10
+                color: root.clrPrimary
+                opacity: 0.5
+                
+                Behavior on color { ColorAnimation { duration: 200 } }
+            }
 
             ColumnLayout {
                 id: pathColumn
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
-                spacing: 8
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+                spacing: 10
 
                 StyledText {
-                    text: "Paste the absolute path to your schedule.json file and press Enter:"
-                    font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colSubtext
+                    text: "Schedule JSON path"
+                    font {
+                        pixelSize: Appearance.font.pixelSize.smaller
+                        family: Appearance.font.family.title
+                        variableAxes: Appearance.font.variableAxes.title
+                    }
+                    color: root.clrPrimary
+                }
+
+                StyledText {
+                    text: "Paste absolute path and press Enter"
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.clrSubtext
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
 
-                    MaterialSymbol {
-                        text: "insert_drive_file"
-                        iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colSubtext
-                    }
-
-                    TextField {
-                        id: pathField
+                    // Input field
+                    Rectangle {
                         Layout.fillWidth: true
-                        placeholderText: "/home/user/path/to/schedule.json"
-                        text: Persistent.states.cheatsheet.schedulePath
-                        color: Appearance.colors.colOnLayer1
-                        placeholderTextColor: Appearance.colors.colSubtext
-                        font {
-                            family: Appearance.font.family.main
-                            pixelSize: Appearance.font.pixelSize.small
-                            variableAxes: Appearance.font.variableAxes.main
-                        }
-                        renderType: Text.NativeRendering
-                        selectedTextColor: Appearance.colors.colOnSecondaryContainer
-                        selectionColor: Appearance.colors.colSecondaryContainer
+                        height: 36
+                        radius: 8
+                        color: root.clrBg
+                        border.width: pathField.activeFocus ? 1 : 1
+                        border.color: pathField.activeFocus
+                            ? root.clrPrimary
+                            : root.clrOutlineBright
 
-                        background: Rectangle {
-                            color: Appearance.colors.colLayer2
-                            radius: Appearance.rounding.small
-                            border.width: pathField.activeFocus ? 2 : 1
-                            border.color: pathField.activeFocus
-                                ? Appearance.colors.colTheme
-                                : Appearance.colors.colLayer2Border
-                        }
+                        Behavior on color { ColorAnimation { duration: 200 } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                        padding: 10
+                        RowLayout {
+                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                            spacing: 8
 
-                        onAccepted: {
-                            Persistent.states.cheatsheet.schedulePath = text.trim();
-                            root.editingPath = false;
-                            root.reloadSchedule();
-                        }
+                            MaterialSymbol {
+                                text: "insert_drive_file"
+                                iconSize: Appearance.font.pixelSize.small
+                                color: root.clrSubtext
+                            }
 
-                        Keys.onEscapePressed: {
-                            root.editingPath = false;
+                            TextField {
+                                id: pathField
+                                Layout.fillWidth: true
+                                placeholderText: "/home/user/path/to/schedule.json"
+                                text: Persistent.states.cheatsheet.schedulePath
+                                color: root.clrOnSurface
+                                placeholderTextColor: root.clrSubtext
+                                font {
+                                    family: Appearance.font.family.main
+                                    pixelSize: Appearance.font.pixelSize.small
+                                    variableAxes: Appearance.font.variableAxes.main
+                                }
+                                renderType: Text.NativeRendering
+                                selectedTextColor: root.clrBg
+                                selectionColor: root.clrPrimary
+                                background: Item {}
+                                padding: 0
+
+                                onAccepted: {
+                                    Persistent.states.cheatsheet.schedulePath = text.trim();
+                                    root.editingPath = false;
+                                    root.reloadSchedule();
+                                }
+                                Keys.onEscapePressed: root.editingPath = false;
+                            }
                         }
                     }
 
-                    RippleButton {
-                        implicitWidth: 36
-                        implicitHeight: 36
-                        buttonRadius: Appearance.rounding.full
-                        colBackground: Appearance.colors.colPrimary
-                        onClicked: {
-                            Persistent.states.cheatsheet.schedulePath = pathField.text.trim();
-                            root.editingPath = false;
-                            root.reloadSchedule();
-                        }
-                        contentItem: MaterialSymbol {
+                    // Confirm button
+                    Rectangle {
+                        width: 36; height: 36
+                        radius: 8
+                        color: root.clrPrimary
+                        
+                        Behavior on color { ColorAnimation { duration: 200 } }
+
+                        MaterialSymbol {
                             anchors.centerIn: parent
                             text: "check"
                             iconSize: Appearance.font.pixelSize.normal
-                            color: Appearance.colors.colOnPrimary
+                            color: root.clrBg
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Persistent.states.cheatsheet.schedulePath = pathField.text.trim();
+                                root.editingPath = false;
+                                root.reloadSchedule();
+                            }
                         }
                     }
                 }
 
                 StyledText {
                     visible: Persistent.states.cheatsheet.schedulePath !== ""
-                    text: "Current: " + Persistent.states.cheatsheet.schedulePath
+                    text: "↳ " + Persistent.states.cheatsheet.schedulePath
                     font.pixelSize: Appearance.font.pixelSize.smallest
-                    color: Appearance.colors.colSubtext
+                    color: root.clrSubtext
                     elide: Text.ElideMiddle
                     Layout.fillWidth: true
                 }
@@ -300,88 +418,149 @@ Item {
         }
 
         // ── Empty states ─────────────────────────────────────
+        // No path set
         ColumnLayout {
             visible: Persistent.states.cheatsheet.schedulePath === ""
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            spacing: 10
 
-            Item { implicitHeight: 40 }
+            Item { implicitHeight: 32 }
 
-            MaterialSymbol {
+            Rectangle {
                 Layout.alignment: Qt.AlignHCenter
-                text: "upload_file"
-                iconSize: 48
-                color: Appearance.colors.colSubtext
+                width: 64; height: 64; radius: 18
+                color: Qt.rgba(0.63, 0.63, 0.67, 0.08)
+                border.width: 1
+                border.color: root.clrOutlineBright
+                
+                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "upload_file"
+                    iconSize: 28
+                    color: root.clrSubtext
+                }
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: "No schedule loaded"
-                font.pixelSize: Appearance.font.pixelSize.title
-                color: Appearance.colors.colOnLayer0
+                font {
+                    family: Appearance.font.family.title
+                    pixelSize: Appearance.font.pixelSize.title
+                    variableAxes: Appearance.font.variableAxes.title
+                }
+                color: root.clrOnSurface
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: 'Click "Set Path" to load your schedule.json'
+                text: 'Tap "Set Path" above to load your schedule.json'
                 font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.colors.colSubtext
+                color: root.clrSubtext
             }
+
+            Item { implicitHeight: 16 }
         }
 
+        // Parse error
         ColumnLayout {
             visible: Persistent.states.cheatsheet.schedulePath !== "" && !root.hasData
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            spacing: 10
 
-            Item { implicitHeight: 40 }
+            Item { implicitHeight: 32 }
 
-            MaterialSymbol {
+            Rectangle {
                 Layout.alignment: Qt.AlignHCenter
-                text: "warning"
-                iconSize: 48
-                color: Appearance.colors.colSubtext
+                width: 64; height: 64; radius: 18
+                color: Qt.rgba(0.80, 0.19, 0.19, 0.10)
+                border.width: 1
+                border.color: Qt.rgba(0.80, 0.19, 0.19, 0.25)
+                
+                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "warning"
+                    iconSize: 28
+                    color: root.clrError
+                }
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Could not parse schedule"
-                font.pixelSize: Appearance.font.pixelSize.title
-                color: Appearance.colors.colOnLayer0
+                font {
+                    family: Appearance.font.family.title
+                    pixelSize: Appearance.font.pixelSize.title
+                    variableAxes: Appearance.font.variableAxes.title
+                }
+                color: root.clrOnSurface
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: Persistent.states.cheatsheet.schedulePath
                 font.pixelSize: Appearance.font.pixelSize.smallest
-                color: Appearance.colors.colSubtext
+                color: root.clrSubtext
+                elide: Text.ElideMiddle
             }
+
+            Item { implicitHeight: 16 }
         }
 
+        // No events today
         ColumnLayout {
             visible: root.hasData && !root.showFullSchedule && !root.todayHasEvents
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            spacing: 10
 
-            Item { implicitHeight: 40 }
+            Item { implicitHeight: 32 }
 
-            MaterialSymbol {
+            Rectangle {
                 Layout.alignment: Qt.AlignHCenter
-                text: "free_cancellation"
-                iconSize: 48
-                color: Appearance.colors.colSubtext
+                width: 64; height: 64; radius: 18
+                color: Qt.rgba(0.63, 0.63, 0.67, 0.08)
+                border.width: 1
+                border.color: root.clrOutlineBright
+                
+                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "free_cancellation"
+                    iconSize: 28
+                    color: root.clrSubtext
+                }
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: "No events for today"
-                font.pixelSize: Appearance.font.pixelSize.title
-                color: Appearance.colors.colOnLayer0
+                text: "Nothing scheduled today"
+                font {
+                    family: Appearance.font.family.title
+                    pixelSize: Appearance.font.pixelSize.title
+                    variableAxes: Appearance.font.variableAxes.title
+                }
+                color: root.clrOnSurface
             }
+
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: 'Try "Full" to see the entire week'
+                text: 'Tap "Full" to see the entire week'
                 font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.colors.colSubtext
+                color: root.clrSubtext
             }
+
+            Item { implicitHeight: 16 }
         }
 
         // ── Schedule timeline ────────────────────────────────
@@ -413,22 +592,34 @@ Item {
                         width: timelineColumn.width
                         spacing: 0
 
-                        // Date header (full schedule mode, new date)
+                        // ── Date header (full schedule mode) ─────────────
                         Rectangle {
-                            visible: root.showFullSchedule && (eventDelegate.index === 0 || root.scheduleModel[eventDelegate.index - 1].date !== eventDelegate.modelData.date)
+                            visible: root.showFullSchedule && (
+                                eventDelegate.index === 0 ||
+                                root.scheduleModel[eventDelegate.index - 1].date !== eventDelegate.modelData.date
+                            )
                             Layout.fillWidth: true
-                            Layout.topMargin: eventDelegate.index > 0 ? 12 : 0
+                            Layout.topMargin: eventDelegate.index > 0 ? 16 : 0
                             Layout.bottomMargin: 4
-                            height: 32
-                            color: "transparent"
+                            height: 30
+                            radius: 6
+                            color: eventDelegate.modelData.date === root.todayStr
+                                ? Qt.rgba(0.63, 0.63, 0.67, 0.10)
+                                : "transparent"
+                            
+                            Behavior on color { ColorAnimation { duration: 200 } }
 
                             RowLayout {
-                                anchors { fill: parent; leftMargin: 4 }
+                                anchors { fill: parent; leftMargin: 6; rightMargin: 6 }
                                 spacing: 8
 
                                 Rectangle {
-                                    width: 3; height: 18; radius: 2
-                                    color: Appearance.colors.colTheme
+                                    width: 3; height: 14; radius: 2
+                                    color: eventDelegate.modelData.date === root.todayStr
+                                        ? root.clrPrimary
+                                        : root.clrSubtext
+                                    
+                                    Behavior on color { ColorAnimation { duration: 200 } }
                                 }
 
                                 StyledText {
@@ -438,118 +629,190 @@ Item {
                                     }
                                     font {
                                         family: Appearance.font.family.title
-                                        pixelSize: Appearance.font.pixelSize.normal
+                                        pixelSize: Appearance.font.pixelSize.small
                                         variableAxes: Appearance.font.variableAxes.title
                                     }
                                     color: eventDelegate.modelData.date === root.todayStr
-                                        ? Appearance.colors.colTheme
-                                        : Appearance.colors.colOnLayer0Variant
+                                        ? root.clrPrimary
+                                        : root.clrSubtext
                                     Layout.fillWidth: true
                                 }
+
+                                // Event count badge for this date
+                                Rectangle {
+                                    implicitWidth: dateCountText.implicitWidth + 10
+                                    height: 18; radius: 9
+                                    color: Qt.rgba(0.63, 0.63, 0.67, 0.12)
+                                    visible: eventDelegate.modelData.date === root.todayStr
+                                    
+                                    Behavior on color { ColorAnimation { duration: 200 } }
+
+                                    StyledText {
+                                        id: dateCountText
+                                        anchors.centerIn: parent
+                                        text: (root.parsedDays[eventDelegate.modelData.date] || []).length + " events"
+                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        color: root.clrSubtext
+                                    }
+                                }
                             }
                         }
 
-                        // Event row
-                        RowLayout {
+                        // ── Event row ───────────────────────────────────
+                        Rectangle {
                             Layout.fillWidth: true
-                            spacing: 10
-                            Layout.preferredHeight: 44
+                            implicitHeight: eventRowLayout.implicitHeight + 10
+                            radius: 8
+                            color: "transparent"
 
-                            // Timeline dot + connector
-                            Item {
-                                implicitWidth: 20
-                                Layout.fillHeight: true
-
-                                Rectangle {
-                                    width: 10; height: 10; radius: 5
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 7
-                                    color: root.catColor(eventDelegate.modelData.event[3])
-                                }
-
-                                Rectangle {
-                                    visible: eventDelegate.index < root.scheduleModel.length - 1
-                                    width: 2
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 19
-                                    anchors.bottom: parent.bottom
-                                    color: Qt.rgba(1, 1, 1, 0.06)
-                                }
-                            }
-
-                            // Time
-                            StyledText {
-                                text: eventDelegate.modelData.event[0]
-                                font {
-                                    family: Appearance.font.family.title
-                                    pixelSize: Appearance.font.pixelSize.normal
-                                    variableAxes: Appearance.font.variableAxes.title
-                                }
-                                color: root.catColor(eventDelegate.modelData.event[3])
-                                Layout.preferredWidth: 54
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            // Event name
-                            StyledText {
-                                text: eventDelegate.modelData.event[2]
-                                font.pixelSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnLayer0
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                elide: Text.ElideRight
-                            }
-
-                            // Duration chip
+                            // Subtle hover highlight
                             Rectangle {
-                                implicitWidth: durText.implicitWidth + 16
-                                height: 24; radius: 12
-                                color: Qt.rgba(1, 1, 1, 0.06)
-                                Layout.alignment: Qt.AlignVCenter
+                                anchors.fill: parent
+                                radius: 8
+                                color: Qt.rgba(1, 1, 1, 0.0)
+                                id: eventHoverBg
+                                
+                                Behavior on color { ColorAnimation { duration: 200 } }
 
-                                StyledText {
-                                    id: durText
-                                    anchors.centerIn: parent
-                                    text: eventDelegate.modelData.event[1] + " min"
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colOnLayer0Variant
+                                MouseArea {
+                                    id: eventHoverArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onEntered: eventHoverBg.color = Qt.rgba(1, 1, 1, 0.025)
+                                    onExited:  eventHoverBg.color = Qt.rgba(1, 1, 1, 0.0)
                                 }
                             }
 
-                            // Category chip
-                            Rectangle {
-                                implicitWidth: catLabel.implicitWidth + 16
-                                height: 24; radius: 12
-                                color: Qt.rgba(
-                                    parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(1,3), 16) / 255,
-                                    parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(3,5), 16) / 255,
-                                    parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(5,7), 16) / 255,
-                                    0.18
-                                )
-                                border.color: root.catColor(eventDelegate.modelData.event[3])
-                                border.width: 1
-                                Layout.alignment: Qt.AlignVCenter
+                            RowLayout {
+                                id: eventRowLayout
+                                anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 4; rightMargin: 4 }
+                                spacing: 10
 
+                                // ── Timeline dot + connector ────────────
+                                Item {
+                                    implicitWidth: 18
+                                    Layout.fillHeight: true
+                                    Layout.preferredHeight: 44
+
+                                    // Outer ring
+                                    Rectangle {
+                                        width: 12; height: 12; radius: 6
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 6
+                                        color: "transparent"
+                                        border.width: 2
+                                        border.color: root.catColor(eventDelegate.modelData.event[3])
+                                        opacity: 0.6
+                                    }
+
+                                    // Inner dot
+                                    Rectangle {
+                                        width: 6; height: 6; radius: 3
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 9
+                                        color: root.catColor(eventDelegate.modelData.event[3])
+                                    }
+
+                                    // Connector line
+                                    Rectangle {
+                                        visible: eventDelegate.index < root.scheduleModel.length - 1
+                                        width: 1
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        anchors.top: parent.top
+                                        anchors.topMargin: 20
+                                        anchors.bottom: parent.bottom
+                                        color: root.clrOutlineBright
+                                        
+                                        Behavior on color { ColorAnimation { duration: 200 } }
+                                    }
+                                }
+
+                                // ── Time ───────────────────────────────
                                 StyledText {
-                                    id: catLabel
-                                    anchors.centerIn: parent
-                                    text: eventDelegate.modelData.event[3]
-                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    text: eventDelegate.modelData.event[0]
+                                    font {
+                                        family: Appearance.font.family.title
+                                        pixelSize: Appearance.font.pixelSize.small
+                                        variableAxes: Appearance.font.variableAxes.title
+                                    }
                                     color: root.catColor(eventDelegate.modelData.event[3])
+                                    Layout.preferredWidth: 50
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                // ── Event name ─────────────────────────
+                                StyledText {
+                                    text: eventDelegate.modelData.event[2]
+                                    font.pixelSize: Appearance.font.pixelSize.normal
+                                    color: root.clrOnSurface
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    elide: Text.ElideRight
+                                }
+
+                                // ── Duration chip ──────────────────────
+                                Rectangle {
+                                    implicitWidth: durText.implicitWidth + 14
+                                    height: 22; radius: 6
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                    border.width: 1
+                                    border.color: root.clrOutline
+                                    Layout.alignment: Qt.AlignVCenter                                    
+                                    Behavior on color { ColorAnimation { duration: 200 } }
+                                    Behavior on border.color { ColorAnimation { duration: 200 } }
+                                    StyledText {
+                                        id: durText
+                                        anchors.centerIn: parent
+                                        text: eventDelegate.modelData.event[1] + "m"
+                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        color: root.clrSubtext
+                                    }
+                                }
+
+                                // ── Category chip ──────────────────────
+                                Rectangle {
+                                    implicitWidth: catLabel.implicitWidth + 14
+                                    height: 22; radius: 6
+                                    color: Qt.rgba(
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(1,3), 16) / 255,
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(3,5), 16) / 255,
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(5,7), 16) / 255,
+                                        0.14
+                                    )
+                                    border.color: Qt.rgba(
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(1,3), 16) / 255,
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(3,5), 16) / 255,
+                                        parseInt(root.catColor(eventDelegate.modelData.event[3]).slice(5,7), 16) / 255,
+                                        0.45
+                                    )
+                                    border.width: 1
+                                    Layout.alignment: Qt.AlignVCenter
+                                    
+                                    Behavior on color { ColorAnimation { duration: 200 } }
+                                    Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                                    StyledText {
+                                        id: catLabel
+                                        anchors.centerIn: parent
+                                        text: eventDelegate.modelData.event[3]
+                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        color: root.catColor(eventDelegate.modelData.event[3])
+                                    }
                                 }
                             }
                         }
 
-                        // Faint divider
+                        // ── Divider ─────────────────────────────────────
                         Rectangle {
                             visible: eventDelegate.index < root.scheduleModel.length - 1
                             Layout.fillWidth: true
                             height: 1
-                            color: Qt.rgba(1, 1, 1, 0.04)
-                            Layout.leftMargin: 30
-                        }
+                            color: root.clrOutline
+                            Layout.leftMargin: 28
+                            Layout.rightMargin: 4                            
+                            Behavior on color { ColorAnimation { duration: 200 } }                        }
                     }
                 }
             }
