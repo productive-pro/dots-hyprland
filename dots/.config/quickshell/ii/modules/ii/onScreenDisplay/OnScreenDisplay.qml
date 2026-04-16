@@ -15,6 +15,9 @@ Scope {
     property string protectionMessage: ""
     property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
 
+    // Dictation real-time HUD
+    DictationHud {}
+
     property string currentIndicator: "volume"
     property var indicators: [
         {

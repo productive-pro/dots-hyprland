@@ -13,6 +13,9 @@ Singleton {
     property bool crosshairOpen: false
     property bool sidebarLeftOpen: false
     property bool voiceAssistantActive: false
+    property bool dictationActive: false       // true while transcribe --mode toggle is recording
+    property string dictationStatus: "idle"    // "idle" | "recording" | "transcribing"
+    property string dictationText: ""          // live transcript chunks
     // Agent workspace mode — toggled by Ctrl+O via agentModeToggle shortcut
     property bool agentModeActive: false
     property bool sidebarRightOpen: false
