@@ -92,6 +92,12 @@ Wrap all literal strings.
 text: Translation.tr("Hello World")
 ```
 
+### 6. OSD & IPC Patterns
+When creating floating overlays (On Screen Displays), follow the established `Loader` + `PanelWindow` + `IpcHandler` pattern:
+1. **Lazy Loading**: Wrap `PanelWindow` in a `Loader` driven by a `GlobalStates` boolean to save resources and avoid stealing focus when hidden.
+2. **IPC Triggering**: Use `IpcHandler` to expose `show()`, `hide()`, and `toggle()` methods to bash scripts (e.g. `quickshell ipc call dictation toggle`).
+3. **Polling vs Watchers**: If reading transient state files (e.g., in `~/.cache/`), prefer using `Process` triggered by a `Timer` rather than `FileView`, as `FileView` fails if the file doesn't exist at startup.
+
 ---
 
 ## 🐍 Python & Scripts
