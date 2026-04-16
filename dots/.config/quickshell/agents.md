@@ -1,119 +1,83 @@
-# Quickshell Configuration Guide for AI Agents
+# End4Dots Quickshell Architecture & AI Agent Guide
 
-This document outlines the architecture, coding patterns, and directory conventions for the `illogical-impulse` (ii) and `waffle` shell configurations. Use this to maintain consistency, reusability, and maintainability.
-
----
-
-## 🏗️ Architecture
-
-### 1. Global Singletons
-The shell relies heavily on QML Singletons for state management and services. Always check existing singletons before implementing new logic.
-
-- **`Config`**: Global settings handler. Access options via `Config.options`.
-- **`Directories`**: Centralized path definitions. Use this instead of hardcoding paths.
-- **`Appearance`**: Centralized styling (colors, fonts, animations, sizes).
-- **`Persistent`**: State that survives restarts (e.g., current AI model, widget positions).
-- **`GlobalStates`**: Transient UI states (e.g., is the sidebar open?).
-- **`Translation`**: Localization service. Always wrap user-facing strings in `Translation.tr("string")`.
-
-### 2. Services (`ii/services/`)
-Services are singletons that interface with the system or provide complex logic:
-- **`Ai`**: LLM integration.
-- **`Audio`**: Volume and player controls.
-- **`HyprlandData`**: Real-time Hyprland state (workspaces, windows).
-- **`Notifications`**: Desktop notification management.
+This document is the "source of truth" to guide AI agents and developers through the [end4dots](https://github.com/end-4/dots) Quickshell integration (`~/.config/quickshell/ii/`).
 
 ---
 
-## 📂 Directory Structure
+## 🏗️ 1. Shell Root & Panel Families
 
-- `ii/`: Root for the "Illogical Impulse" configuration.
-  - `assets/`: Icons and images.
-  - `modules/`: UI components and sub-modules.
-    - `common/`: Reusable singletons and functions.
-    - `ii/`: Components specific to the "ii" family.
-  - `scripts/`: Bash and Python scripts.
-  - `services/`: Core logic singletons.
-  - `translations/`: JSON translation files.
+Quickshell on this system is initialized via `shell.qml`.
+- **Panel Families**: The shell supports dynamic switching of visual paradigms (currently `ii` and `waffle`).
+- **Family Registration**: Declared in `panelFamilies/`. `shell.qml` uses `LazyLoader` to switch the entire desktop interface context at runtime without killing Quickshell.
+- **PanelLoader Strategy**: Most visual modules inside a family (e.g., `Bar`, `Dock`, `Cheatsheet`) are wrapped in `PanelLoader`. This automatically spawns the widget across **all connected monitors**, providing built-in multi-monitor support without manually iterating `Quickshell.screens`.
 
 ---
 
-## 🎨 Coding Patterns
+## 🗄️ 2. Core Directories
 
-### 1. File Headers
-Always use `pragma Singleton` for services/config and `pragma ComponentBehavior: Bound` for all QML files to ensure type safety and performance.
+- `modules/common/`: Shared, family-independent widgets (`StyledText.qml`, `StyledButton.qml`, `MaterialSymbol.qml`) and Singletons (`Config.qml`, `Appearance.qml`).
+- `modules/ii/` and `modules/waffle/`: Visual implementations for specific desktop aesthetics. 
+- `services/`: "Backend" logic written in QML structure. These interface directly with system binaries, D-Bus, or APIs.
+- `scripts/`: Python and bash scripts acting as heavy-duty bridges (AI scripts, color material generation, screen snipping).
+- `translations/`: JSON strings. Managed by `Translation.qml`.
 
+---
+
+## 🧠 3. State Management (Singletons)
+
+All major UI interactions rely heavily on QML Singletons (pragmas).
+- **`Config`**: Persistent user settings. Modifiable via `settings.qml` frontend. Access via `Config.options.param`.
+- **`Directories`**: File path normalization. Always use this over hardcoded paths (e.g., `Directories.assetsPath`).
+- **`Appearance`**: Material-3 inspired token system.
+  - `Appearance.colors.colLayer0` (backgrounds)
+  - `Appearance.font.pixelSize.normal` (fonts) 
+  - Never hardcode color hexes or raw pixel sizes.
+- **`GlobalStates`**: Transient booleans governing the visible state of UI components (e.g., `sidebarRightOpen`, `dictationActive`). Bound to visibility properties or `Loader.active`.
+- **`Persistent`**: Values that outlive a Quickshell restart (e.g., last used Ollama model).
+
+---
+
+## 🔌 4. Services Deep Dive
+
+Services live in `/services/` and abstract system logic into QML APIs:
+- **`HyprlandData` / `HyprlandXkb`**: Live ingestion of Hyprland state (`activeWorkspace`, `clients`, keyboard layouts).
+- **`Audio`**: Pulseaudio/Wireplumber interface for volume and sink states.
+- **`Notifications`**: Desktop notification daemon integration.
+- **`Ai`**: Integration with Gemini, OpenAI, Claude, and local Ollama, utilizing `ApiStrategy` traits.
+
+---
+
+## 🎨 5. UI Implementation Patterns
+
+### File Declarations
+Every UI QML component must begin with:
 ```qml
-pragma Singleton
 pragma ComponentBehavior: Bound
 import QtQuick
-import Quickshell
 ```
+This forces strict QML boundary checking.
 
-### 2. Styling (Appearance)
-Never hardcode colors or sizes. Use `Appearance.colors`, `Appearance.font`, and `Appearance.sizes`.
+### Execution & Polling
+- **Fire & Forget**: Use `Quickshell.execDetached("command")`.
+- **System Polling**: Use `Process {}` + `SplitParser`. 
+- **Filesystem Observation**: If watching a transient file (like cache states), use `Process` triggered by a `Timer`, heavily preferred over `FileView` if the file creation/destruction lifecycle is volatile.
 
-```qml
-Rectangle {
-    color: Appearance.colors.colLayer1
-    radius: Appearance.rounding.normal
-    Text {
-        font.family: Appearance.font.family.main
-        font.pixelSize: Appearance.font.pixelSize.normal
-        color: Appearance.colors.colOnLayer1
-    }
-}
-```
-
-### 3. File Paths
-Always use `Directories` for system paths and `Quickshell.shellPath()` for internal assets.
-
-```qml
-property string icon: Quickshell.shellPath("assets/icons/spark-symbolic.svg")
-property string todoFile: Directories.todoPath
-```
-
-### 4. System Commands
-Use `Quickshell.execDetached()` for one-off commands and the `Process` component for commands requiring output handling.
-
-```qml
-Process {
-    id: myProc
-    command: ["ls", "-la"]
-    stdout: StdioCollector {
-        onStreamFinished: console.log(text)
-    }
-}
-```
-
-### 5. Translations
-Wrap all literal strings.
-```qml
-text: Translation.tr("Hello World")
-```
-
-### 6. OSD & IPC Patterns
-When creating floating overlays (On Screen Displays), follow the established `Loader` + `PanelWindow` + `IpcHandler` pattern:
-1. **Lazy Loading**: Wrap `PanelWindow` in a `Loader` driven by a `GlobalStates` boolean to save resources and avoid stealing focus when hidden.
-2. **IPC Triggering**: Use `IpcHandler` to expose `show()`, `hide()`, and `toggle()` methods to bash scripts (e.g. `quickshell ipc call dictation toggle`).
-3. **Polling vs Watchers**: If reading transient state files (e.g., in `~/.cache/`), prefer using `Process` triggered by a `Timer` rather than `FileView`, as `FileView` fails if the file doesn't exist at startup.
+### OSD & IPC Patterns (Floating Overlays)
+When creating floating overlays (On Screen Displays, like Volume or Dictation HUD):
+1. **Lazy Loading**: Build the `PanelWindow` sourceComponent inside a `Loader`. Bind the loader's `active` property strictly to a `GlobalStates` boolean.
+2. **IPC Handlers**: Instead of direct global keys, use an `IpcHandler { target: "feature" }` inside the shell so external bash scripts or hyprland binds can toggle the UI cleanly via `quickshell ipc call feature toggle`.
+3. **Appearance**: Use `StyledRectangularShadow` to cast a consistent drop shadow from the inner `Rectangle` (the pill).
 
 ---
 
-## 🐍 Python & Scripts
+## 🐍 6. Python Integration Ecosystem
 
-- **Virtual Env**: A Python venv is located at `~/.local/state/quickshell`.
-- **Environment Variable**: Scripts use `$ILLOGICAL_IMPULSE_VIRTUAL_ENV` to find this venv.
-- **Usage**: Use Python for complex logic like image processing (`opencv`), color generation, or advanced parsing.
+- **Virtual Environment**: Python scripts utilize an isolated quickshell venv at `~/.local/state/quickshell/`.
+- Scripts interact heavily with `.cache` IPC files for low-latency state transfer into QML. 
 
----
-
-## 🛠️ Development Workflow for Agents
-
-1. **Research**: Check `Directories.qml` and `Config.qml` to see if your feature already has a place for configuration.
-2. **Implementation**:
-   - Use `ii/modules/common/widgets/` for UI building blocks.
-   - Use `ii/services/` for logic.
-   - Keep UI and logic separate.
-3. **Consistency**: Follow the Material 3 (M3) naming conventions found in `Appearance.m3colors`.
-4. **Validation**: Ensure scripts are executable and handle errors gracefully (especially `Process` exits).
+## 🛠️ Modding Guide summary for Agents
+1. Do not hardcode UI logic in `shell.qml`.
+2. Add transient state to `GlobalStates.qml`.
+3. Scaffold new modules inside `modules/ii/yourFeature/`.
+4. Inject them into `panelFamilies/IllogicalImpulseFamily.qml` wrapped in a `PanelLoader`.
+5. Expose manual control hooks via `IpcHandler`.
