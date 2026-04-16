@@ -1,4 +1,3 @@
-pragma ComponentBehavior: Bound
 import qs
 import qs.services
 import qs.modules.common
@@ -8,43 +7,84 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 
-// DictationHud.qml — floating real-time transcription indicator
-// Polls ~/.cache/qs-dictation/status and text files written by transcribe.py
-// Follows the ii OSD pattern: PanelWindow inside a Loader, driven by GlobalStates
+// DictationHud.qml — floating real-time transcription overlay
+// Triggered via IPC: quickshell ipc call dictation show / hide
+// Also polls state files written by transcribe.py
 
 Scope {
     id: root
+    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
 
     readonly property string stateDir: Quickshell.env("HOME") + "/.cache/qs-dictation"
 
-    // ── File pollers ───────────────────────────────────────────────────────
+    // Poll state files with a Timer (FileView needs files to exist at startup)
+    Timer {
+        id: pollTimer
+        interval: 300
+        repeat: true
+        running: true
+        onTriggered: {
+            statusReader.running = true
+            textReader.running = true
+        }
+    }
 
-    FileView {
-        id: statusFile
-        path: root.stateDir + "/status"
-        pollInterval: 150
-        onTextChanged: {
-            const s = text.trim()
-            if (s === "recording" || s === "transcribing" || s === "idle") {
-                GlobalStates.dictationStatus = s
-                GlobalStates.dictationActive = (s !== "idle")
-                if (s === "idle") GlobalStates.dictationText = ""
+    Process {
+        id: statusReader
+        command: ["cat", root.stateDir + "/status"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                const s = data.trim()
+                if (s === "recording" || s === "transcribing") {
+                    GlobalStates.dictationActive = true
+                    GlobalStates.dictationStatus = s
+                } else if (s === "idle") {
+                    GlobalStates.dictationActive = false
+                    GlobalStates.dictationStatus = "idle"
+                    GlobalStates.dictationText = ""
+                }
             }
         }
     }
 
-    FileView {
-        id: textFile
-        path: root.stateDir + "/text"
-        pollInterval: 200
-        onTextChanged: {
-            if (GlobalStates.dictationActive)
-                GlobalStates.dictationText = text.trim()
+    Process {
+        id: textReader
+        command: ["cat", root.stateDir + "/text"]
+        running: false
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                if (GlobalStates.dictationActive && data.trim().length > 0)
+                    GlobalStates.dictationText = data.trim()
+            }
         }
     }
 
-    // ── HUD window — only instantiated when dictation is active ───────────
+    // IPC for manual trigger from scripts
+    IpcHandler {
+        target: "dictation"
+
+        function show() {
+            GlobalStates.dictationActive = true
+            GlobalStates.dictationStatus = "recording"
+        }
+
+        function hide() {
+            GlobalStates.dictationActive = false
+            GlobalStates.dictationStatus = "idle"
+            GlobalStates.dictationText = ""
+        }
+
+        function toggle() {
+            if (GlobalStates.dictationActive) hide()
+            else show()
+        }
+    }
+
+    // ── HUD Window ────────────────────────────────────────────────────────
 
     Loader {
         id: hudLoader
@@ -54,113 +94,102 @@ Scope {
             id: hudRoot
             color: "transparent"
 
+            Connections {
+                target: root
+                function onFocusedScreenChanged() {
+                    hudRoot.screen = root.focusedScreen
+                }
+            }
+
             WlrLayershell.namespace: "quickshell:dictationHud"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-            exclusionMode: ExclusionMode.Ignore
-            exclusiveZone: 0
 
             anchors {
                 bottom: true
-                right: true
             }
+            mask: Region {
+                item: hudBg
+            }
+
+            exclusionMode: ExclusionMode.Ignore
+            exclusiveZone: 0
             margins {
-                bottom: Appearance.sizes.barHeight + 12
-                right: 20
+                bottom: Appearance.sizes.barHeight
             }
 
-            implicitWidth: hudContent.implicitWidth + 28
-            implicitHeight: hudContent.implicitHeight + 20
+            implicitWidth: hudBg.implicitWidth + 2 * Appearance.sizes.elevationMargin
+            implicitHeight: hudBg.implicitHeight + 2 * Appearance.sizes.elevationMargin
+            visible: hudLoader.active
 
-            // Mask to pass clicks through the transparent area
-            mask: Region { item: hudContent }
+            StyledRectangularShadow {
+                target: hudBg
+            }
 
-            // ── Content ───────────────────────────────────────────────────
-
-            ColumnLayout {
-                id: hudContent
+            Rectangle {
+                id: hudBg
                 anchors {
-                    left: parent.left; leftMargin: 14
-                    right: parent.right; rightMargin: 14
-                    top: parent.top; topMargin: 10
+                    fill: parent
+                    margins: Appearance.sizes.elevationMargin
                 }
-                spacing: 6
+                radius: Appearance.rounding.full
+                color: Appearance.colors.colLayer0
 
-                // Background pill
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: statusRow.implicitHeight + 12
-                    color: Appearance.colors.colLayer1
-                    radius: Appearance.rounding.full
-                    opacity: 0.92
+                implicitWidth: hudRow.implicitWidth
+                implicitHeight: hudRow.implicitHeight
 
-                    Behavior on implicitHeight {
-                        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                    }
+                RowLayout {
+                    id: hudRow
+                    anchors.fill: parent
+                    spacing: 10
 
-                    RowLayout {
-                        id: statusRow
-                        anchors {
-                            left: parent.left; leftMargin: 12
-                            right: parent.right; rightMargin: 12
-                            verticalCenter: parent.verticalCenter
-                        }
-                        spacing: 8
+                    Item {
+                        implicitWidth: 30
+                        implicitHeight: 30
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: 10
+                        Layout.topMargin: 9
+                        Layout.bottomMargin: 9
 
-                        // Pulsing dot
-                        Rectangle {
-                            id: dot
-                            width: 8; height: 8; radius: 4
+                        MaterialSymbol {
+                            anchors.centerIn: parent
                             color: GlobalStates.dictationStatus === "recording"
                                 ? Appearance.m3colors.m3error
-                                : Appearance.colors.colOnLayer1
+                                : Appearance.colors.colOnLayer0
+                            text: "mic"
+                            iconSize: 24
 
                             SequentialAnimation on opacity {
                                 running: GlobalStates.dictationStatus === "recording"
                                 loops: Animation.Infinite
-                                NumberAnimation { to: 0.15; duration: 500; easing.type: Easing.InOutSine }
-                                NumberAnimation { to: 1.0;  duration: 500; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 0.2; duration: 600; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
                             }
                         }
+                    }
+
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.rightMargin: 20
+                        spacing: 2
 
                         StyledText {
+                            color: Appearance.colors.colOnLayer0
+                            font.pixelSize: Appearance.font.pixelSize.small
                             text: GlobalStates.dictationStatus === "recording"
                                 ? Translation.tr("Recording…")
                                 : Translation.tr("Transcribing…")
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.colors.colOnLayer1
                         }
-                    }
-                }
 
-                // Live transcript (shown only when text available)
-                Rectangle {
-                    visible: GlobalStates.dictationText.length > 0
-                    Layout.fillWidth: true
-                    implicitHeight: transcriptText.implicitHeight + 12
-                    color: Appearance.colors.colLayer2
-                    radius: Appearance.rounding.normal
-                    opacity: 0.9
-                    clip: true
-
-                    Behavior on implicitHeight {
-                        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                    }
-
-                    StyledText {
-                        id: transcriptText
-                        anchors {
-                            left: parent.left; leftMargin: 10
-                            right: parent.right; rightMargin: 10
-                            top: parent.top; topMargin: 6
+                        StyledText {
+                            visible: GlobalStates.dictationText.length > 0
+                            color: Appearance.colors.colSubtext
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            text: GlobalStates.dictationText
+                            Layout.maximumWidth: Appearance.sizes.osdWidth - 80
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 3
+                            elide: Text.ElideRight
                         }
-                        text: GlobalStates.dictationText
-                        font.pixelSize: Appearance.font.pixelSize.small
-                        color: Appearance.colors.colOnLayer2
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 5
-                        elide: Text.ElideRight
                     }
                 }
             }
