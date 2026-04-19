@@ -27,7 +27,6 @@ Scope {
         running: true
         onTriggered: {
             statusReader.running = true
-            textReader.running = true
         }
     }
 
@@ -50,18 +49,7 @@ Scope {
         }
     }
 
-    Process {
-        id: textReader
-        command: ["cat", root.stateDir + "/text"]
-        running: false
-        stdout: SplitParser {
-            splitMarker: ""
-            onRead: data => {
-                if (GlobalStates.dictationActive && data.trim().length > 0)
-                    GlobalStates.dictationText = data.trim()
-            }
-        }
-    }
+
 
     // IPC for manual trigger from scripts
     IpcHandler {
@@ -132,7 +120,7 @@ Scope {
                     margins: Appearance.sizes.elevationMargin
                 }
                 radius: Appearance.rounding.full
-                color: Appearance.colors.colLayer0
+                color: Qt.rgba(Appearance.colors.colLayer0.r, Appearance.colors.colLayer0.g, Appearance.colors.colLayer0.b, 0.75) // Slightly transparent
 
                 implicitWidth: hudRow.implicitWidth
                 implicitHeight: hudRow.implicitHeight
@@ -178,17 +166,6 @@ Scope {
                             text: GlobalStates.dictationStatus === "recording"
                                 ? Translation.tr("Recording…")
                                 : Translation.tr("Transcribing…")
-                        }
-
-                        StyledText {
-                            visible: GlobalStates.dictationText.length > 0
-                            color: Appearance.colors.colSubtext
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            text: GlobalStates.dictationText
-                            Layout.maximumWidth: Appearance.sizes.osdWidth - 80
-                            wrapMode: Text.Wrap
-                            maximumLineCount: 3
-                            elide: Text.ElideRight
                         }
                     }
                 }
