@@ -45,6 +45,16 @@ Item {
         return new Date(d.getTime() - off).toISOString().split('T')[0];
     }
 
+    function isoWeekNumber(d) {
+        var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        var dayNum = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+        var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    }
+
+    readonly property int todayWeekNo: isoWeekNumber(new Date())
+
     // ── Colour palette per category tag ──────────────────────
     function catColor(tag) {
         var t = (tag || "").toLowerCase();
@@ -63,11 +73,14 @@ Item {
 
     // ── JSON file reader ──────────────────────────────────────
     property var parsedDays: ({})
+    property var parsedAims: ({})
+    readonly property string todayAim: (root.parsedAims[root.todayStr] || "")
 
     function reloadSchedule() {
         var p = Persistent.states.cheatsheet.schedulePath;
         if (!p || p.trim() === "") {
             root.parsedDays = {};
+            root.parsedAims = {};
             return;
         }
         scheduleFileView.path = Qt.resolvedUrl("file://" + p);
@@ -81,17 +94,38 @@ Item {
         onLoaded: {
             try {
                 var obj = JSON.parse(scheduleFileView.text());
-                if (obj.days && typeof obj.days === "object")
-                    root.parsedDays = obj.days;
-                else
-                    root.parsedDays = obj;
+                var dayMap = {};
+                var aimMap = {};
+
+                if (!(obj.weeks && typeof obj.weeks === "object")) {
+                    throw new Error("Invalid schedule schema: expected top-level weeks object");
+                }
+
+                var weeks = obj.weeks;
+                var wkKeys = Object.keys(weeks);
+                for (var wi = 0; wi < wkKeys.length; wi++) {
+                    var wk = weeks[wkKeys[wi]] || {};
+                    var dObj = (wk.days && typeof wk.days === "object") ? wk.days : {};
+                    var dKeys = Object.keys(dObj);
+                    for (var di = 0; di < dKeys.length; di++) {
+                        var dateKey = dKeys[di];
+                        var dayVal = dObj[dateKey] || {};
+                        dayMap[dateKey] = Array.isArray(dayVal.events) ? dayVal.events : [];
+                        aimMap[dateKey] = dayVal.aim ? String(dayVal.aim) : "";
+                    }
+                }
+
+                root.parsedDays = dayMap;
+                root.parsedAims = aimMap;
             } catch(e) {
                 root.parsedDays = {};
+                root.parsedAims = {};
                 console.warn("[Schedule] JSON parse error:", e);
             }
         }
         onLoadFailed: (error) => {
             root.parsedDays = {};
+            root.parsedAims = {};
             console.warn("[Schedule] Failed to load file:", error);
         }
     }
@@ -164,7 +198,7 @@ Item {
                 Layout.fillWidth: false
 
                 StyledText {
-                    text: root.showFullSchedule ? "Full Schedule" : "Today"
+                    text: "Week " + root.todayWeekNo
                     font {
                         family: Appearance.font.family.title
                         pixelSize: Appearance.font.pixelSize.title
@@ -276,6 +310,41 @@ Item {
             height: 1
             color: root.clrOutline            
             Behavior on color { ColorAnimation { duration: 200 } }        }
+
+        // ── Today's main aim ───────────────────────────────────
+        Rectangle {
+            visible: root.todayAim !== ""
+            Layout.fillWidth: true
+            implicitHeight: aimCol.implicitHeight + 16
+            radius: 10
+            color: root.clrSurface
+            border.width: 1
+            border.color: root.clrOutlineBright
+
+            ColumnLayout {
+                id: aimCol
+                anchors { fill: parent; margins: 8 }
+                spacing: 2
+
+                StyledText {
+                    text: "TODAY'S AIM"
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.clrPrimary
+                }
+
+                StyledText {
+                    text: root.todayAim
+                    font {
+                        family: Appearance.font.family.title
+                        pixelSize: Appearance.font.pixelSize.title
+                        variableAxes: Appearance.font.variableAxes.title
+                    }
+                    color: root.clrOnSurface
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+            }
+        }
 
         // ── Path editor (collapsible) ────────────────────────
         Rectangle {
